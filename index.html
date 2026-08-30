@@ -2,435 +2,259 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Game Doi Khang - 30 Levels & Boss Skills</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Game Màn Hình Ngang Multi-touch</title>
     <style>
-        * { box-sizing: border-box; touch-action: manipulation; user-select: none; }
-        body { margin: 0; background: #111; color: #fff; font-family: sans-serif; text-align: center; }
-        .screen { display: none; width: 100%; max-width: 600px; margin: 0 auto; min-height: 100vh; padding: 15px; }
-        .active { display: block; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none; /* Ngăn bôi đen văn bản khi chạm đè */
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            touch-action: none; /* Chống cuộn/panning mặc định trình duyệt */
+        }
 
-        h1, h2 { color: #f1c40f; margin-top: 10px; }
-        .menu-btn { background: #27ae60; color: white; border: none; padding: 15px 30px; font-size: 18px; font-weight: bold; border-radius: 8px; margin: 10px; width: 80%; cursor: pointer; }
-        .menu-btn:active { transform: scale(0.98); }
-        .btn-shop { background: #e67e22; }
-        .btn-back { background: #7f8c8d; width: auto; padding: 8px 15px; font-size: 14px; }
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #111;
+            font-family: sans-serif;
+        }
 
-        /* Coins display */
-        .coin-txt { font-size: 20px; color: #f1c40f; font-weight: bold; margin: 10px 0; }
+        /* Khung chứa game */
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: #222;
+        }
 
-        /* Shop Grid */
-        .shop-item { background: #222; border: 2px solid #444; border-radius: 8px; padding: 10px; margin: 10px 0; display: flex; justify-content: space-between; align-items: center; }
-        .shop-item.equipped { border-color: #2ecc71; }
-        .buy-btn { background: #e74c3c; color: white; border: none; padding: 8px 12px; border-radius: 5px; font-weight: bold; }
+        /* Canvas hiển thị game */
+        #gameCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
 
-        /* Level Selector */
-        .level-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 15px; }
-        .lvl-btn { background: #34495e; color: white; border: 2px solid #5d6d7e; border-radius: 8px; padding: 15px 0; font-size: 16px; font-weight: bold; }
-        .lvl-btn.boss { background: #c0392b; border-color: #f1c40f; }
+        /* Nút bật toàn màn hình & khóa ngang */
+        #fullscreen-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.8);
+            border: none;
+            border-radius: 5px;
+            font-weight: bold;
+            z-index: 100;
+        }
 
-        /* Game UI */
-        .ui-bar { display: flex; justify-content: space-between; padding: 8px; background: #222; }
-        .health-box { width: 45%; background: #444; height: 18px; border: 1px solid #fff; border-radius: 4px; overflow: hidden; }
-        .health-fill { height: 100%; width: 100%; background: #2ecc71; transition: width 0.1s; }
-        #p2Health { background: #e74c3c; float: right; }
-        
-        canvas { background: #1a1a2e; border-bottom: 4px solid #4e4e50; display: block; width: 100%; height: auto; }
-        .controls { display: flex; justify-content: space-between; padding: 10px; max-width: 600px; margin: 0 auto; }
-        .btn-group { display: grid; grid-template-columns: repeat(3, 50px); grid-gap: 8px; }
-        .btn { background: #333; color: #fff; border: 2px solid #555; border-radius: 8px; font-weight: bold; font-size: 15px; height: 48px; width: 48px; display: flex; align-items: center; justify-content: center; }
-        .btn:active { background: #666; }
-        .btn-punch { background: #e67e22; }
-        .btn-kick { background: #e74c3c; }
-        .btn-dash { background: #2980b9; grid-column: span 2; width: 100%; }
-        
-        #skillNotice { color: #e74c3c; font-weight: bold; height: 20px; margin: 5px 0; }
+        /* Giao diện nút điều khiển ảo overlay */
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 30px;
+            pointer-events: none; /* Rê/lướt qua vùng trống vẫn ghi nhận touch */
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            pointer-events: auto;
+        }
+
+        .btn {
+            width: 70px;
+            height: 70px;
+            background: rgba(255, 255, 255, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .btn:active, .btn.active {
+            background: rgba(255, 255, 255, 0.7);
+            color: #000;
+        }
+
+        /* Cảnh báo nếu thiết bị ở màn hình dọc */
+        @media screen and (orientation: portrait) {
+            #portrait-warning {
+                display: flex !important;
+            }
+        }
+
+        #portrait-warning {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+            text-align: center;
+            padding: 20px;
+        }
     </style>
 </head>
 <body>
 
-    <!-- SẢNH GAME (LOBBY) -->
-    <div id="lobbyScreen" class="screen active">
-        <h1>VÕ SĨ HUYỀN THOẠI</h1>
-        <div class="coin-txt">💰 Xu: <span id="lobbyCoins">0</span></div>
-        <button class="menu-btn" onclick="showScreen('levelScreen')">🎮 CHƠI GAME</button>
-        <button class="menu-btn btn-shop" onclick="showScreen('shopScreen')">🛒 CỬA HÀNG</button>
+    <!-- Màn hình cảnh báo khi xoay dọc -->
+    <div id="portrait-warning">
+        <h2>Vui lòng xoay ngang màn hình để chơi</h2>
+        <p>Hoặc nhấn nút bên dưới để vào chế độ Toàn màn hình ngang</p>
     </div>
 
-    <!-- CỬA HÀNG (SHOP) -->
-    <div id="shopScreen" class="screen">
-        <h2>CỬA HÀNG VŨ KHÍ</h2>
-        <div class="coin-txt">💰 Xu: <span id="shopCoins">0</span></div>
-        
-        <div class="shop-item" id="item-dagger">
-            <div style="text-align:left;">
-                <b style="color:#bdc3c7;">🗡️ Dao Găm</b><br>
-                <small>Giá: 5 Xu | Sát thương: +1</small>
-            </div>
-            <button class="buy-btn" onclick="buyWeapon('dagger', 5, 1)">Mua (5 Xu)</button>
-        </div>
+    <div id="game-container">
+        <button id="fullscreen-btn">Xoay Ngang & Toàn Màn Hình</button>
+        <canvas id="gameCanvas"></canvas>
 
-        <div class="shop-item" id="item-sword">
-            <div style="text-align:left;">
-                <b style="color:#f1c40f;">⚔️ Kiếm</b><br>
-                <small>Giá: 20 Xu | Sát thương: +5</small>
-            </div>
-            <button class="buy-btn" onclick="buyWeapon('sword', 20, 5)">Mua (20 Xu)</button>
-        </div>
-
-        <div class="shop-item" id="item-axe">
-            <div style="text-align:left;">
-                <b style="color:#e74c3c;">🪓 Rìu</b><br>
-                <small>Giá: 30 Xu | Sát thương: +10</small>
-            </div>
-            <button class="buy-btn" onclick="buyWeapon('axe', 30, 10)">Mua (30 Xu)</button>
-        </div>
-
-        <button class="menu-btn btn-back" onclick="showScreen('lobbyScreen')">⬅️ Quay Lại</button>
-    </div>
-
-    <!-- CHỌN MÀN CHƠI (LEVEL SELECT) -->
-    <div id="levelScreen" class="screen">
-        <h2>CHỌN MÀN CHƠI</h2>
-        <button class="menu-btn btn-back" onclick="showScreen('lobbyScreen')">⬅️ Sảnh Game</button>
-        <div class="level-grid" id="levelGrid"></div>
-    </div>
-
-    <!-- MÀN CHƠI GAME (GAMEPLAY) -->
-    <div id="gameScreen" class="screen">
-        <div class="ui-bar">
-            <div>P1 (LVL <span id="p1DmgBonus">+0</span>)<div class="health-box"><div id="p1Health" class="health-fill"></div></div></div>
-            <div>Màn <span id="currentLvlTxt">1</span> (AI)<div class="health-box"><div id="p2Health" class="health-fill"></div></div></div>
-        </div>
-        <div id="skillNotice"></div>
-        <canvas id="gameCanvas" width="600" height="300"></canvas>
-        <button class="menu-btn btn-back" style="margin-top:10px;" onclick="quitToLobby()">🏳️ Thoát Trận</button>
-
+        <!-- Nút di chuyển và lướt (Dash) -->
         <div class="controls">
             <div class="btn-group">
-                <button class="btn" ontouchstart="keys.left=true" ontouchend="keys.left=false" onmousedown="keys.left=true" onmouseup="keys.left=false">◄</button>
-                <button class="btn" onclick="jumpP1()">▲</button>
-                <button class="btn" ontouchstart="keys.right=true" ontouchend="keys.right=false" onmousedown="keys.right=true" onmouseup="keys.right=false">►</button>
+                <div class="btn" id="btn-left">◄</div>
+                <div class="btn" id="btn-right">►</div>
             </div>
-            <div class="btn-group" style="grid-template-columns: repeat(2, 55px);">
-                <button class="btn btn-punch" onclick="attackP1('punch')">Đấm</button>
-                <button class="btn btn-kick" onclick="attackP1('kick')">Đá</button>
-                <button class="btn btn-dash" onclick="dashP1()">💨 Lướt</button>
+            <div class="btn-group">
+                <div class="btn" id="btn-dash">LƯỚT</div>
             </div>
         </div>
     </div>
 
     <script>
-        // Data Game
-        let coins = parseInt(localStorage.getItem('coins')) || 0;
-        let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
-        let equippedWeapon = localStorage.getItem('equippedWeapon') || null;
-        let currentLevel = 1;
+        // ----------------------------------------------------
+        // 1. KHÓA MÀN HÌNH NGANG (SCREEN ORIENTATION LOCK)
+        // ----------------------------------------------------
+        const fullscreenBtn = document.getElementById('fullscreen-btn');
 
-        const weaponsData = {
-            dagger: { name: "Dao Găm", price: 5, dmg: 1 },
-            sword: { name: "Kiếm", price: 20, dmg: 5 },
-            axe: { name: "Rìu", price: 30, dmg: 10 }
+        async function lockLandscape() {
+            try {
+                if (document.documentElement.requestFullscreen) {
+                    await document.documentElement.requestFullscreen();
+                }
+                if (screen.orientation && screen.orientation.lock) {
+                    await screen.orientation.lock('landscape');
+                }
+            } catch (err) {
+                console.log("Không thể tự động khóa xoay ngang:", err);
+            }
+        }
+
+        fullscreenBtn.addEventListener('click', lockLandscape);
+
+        // ----------------------------------------------------
+        // 2. XỬ LÝ ĐA ĐIỂM (MULTI-TOUCH) ĐỂ VỪA GIỮ NÚT VỪA LƯỚT
+        // ----------------------------------------------------
+        const keys = {
+            left: false,
+            right: false,
+            dash: false
         };
 
-        // Screen Management
-        function showScreen(id) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            updateCoinsUI();
-            if(id === 'shopScreen') updateShopUI();
-            if(id === 'levelScreen') renderLevels();
+        const btnLeft = document.getElementById('btn-left');
+        const btnRight = document.getElementById('btn-right');
+        const btnDash = document.getElementById('btn-dash');
+
+        // Hàm kiểm tra điểm chạm (touch) đang đè lên nút nào
+        function setupTouchControl(element, actionKey) {
+            element.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                keys[actionKey] = true;
+                element.classList.add('active');
+            }, { passive: false });
+
+            element.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                keys[actionKey] = false;
+                element.classList.remove('active');
+            }, { passive: false });
+
+            element.addEventListener('touchcancel', (e) => {
+                e.preventDefault();
+                keys[actionKey] = false;
+                element.classList.remove('active');
+            }, { passive: false });
         }
 
-        function updateCoinsUI() {
-            document.getElementById('lobbyCoins').innerText = coins;
-            document.getElementById('shopCoins').innerText = coins;
-            localStorage.setItem('coins', coins);
+        setupTouchControl(btnLeft, 'left');
+        setupTouchControl(btnRight, 'right');
+        setupTouchControl(btnDash, 'dash');
+
+        // ----------------------------------------------------
+        // 3. CANVAS GAME DEMO
+        // ----------------------------------------------------
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
         }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
 
-        function updateShopUI() {
-            for (let w in weaponsData) {
-                let elem = document.getElementById('item-' + w);
-                let btn = elem.querySelector('.buy-btn');
-                if (inventory.includes(w)) {
-                    if (equippedWeapon === w) {
-                        elem.classList.add('equipped');
-                        btn.innerText = "Đang Trang Bị";
-                        btn.style.background = "#2ecc71";
-                        btn.onclick = null;
-                    } else {
-                        elem.classList.remove('equipped');
-                        btn.innerText = "Trang Bị";
-                        btn.style.background = "#2980b9";
-                        btn.onclick = () => equipWeapon(w);
-                    }
-                } else {
-                    btn.innerText = `Mua (${weaponsData[w].price} Xu)`;
-                }
-            }
-        }
+        // Nhân vật
+        const player = {
+            x: 100,
+            y: 200,
+            width: 40,
+            height: 40,
+            speed: 5,
+            isDashing: false,
+            dashCooldown: false
+        };
 
-        function buyWeapon(w, price, dmg) {
-            if (coins >= price && !inventory.includes(w)) {
-                coins -= price;
-                inventory.push(w);
-                equippedWeapon = w;
-                localStorage.setItem('inventory', JSON.stringify(inventory));
-                localStorage.setItem('equippedWeapon', equippedWeapon);
-                updateCoinsUI();
-                updateShopUI();
-            } else if (coins < price) {
-                alert("Bạn không đủ Xu!");
-            }
-        }
+        function update() {
+            let currentSpeed = player.speed;
 
-        function equipWeapon(w) {
-            equippedWeapon = w;
-            localStorage.setItem('equippedWeapon', equippedWeapon);
-            updateShopUI();
-        }
-
-        function renderLevels() {
-            let grid = document.getElementById('levelGrid');
-            grid.innerHTML = '';
-            for (let i = 1; i <= 30; i++) {
-                let btn = document.createElement('button');
-                btn.className = 'lvl-btn' + (i % 10 === 0 ? ' boss' : '');
-                btn.innerText = i % 10 === 0 ? `M${i} 👑` : `M${i}`;
-                btn.onclick = () => startLevel(i);
-                grid.appendChild(btn);
-            }
-        }
-
-        // --- AUDIO SYSTEM ---
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playSound(type) {
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain); gain.connect(audioCtx.destination);
-
-            if (type === 'punch') {
-                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + 0.1);
-                gain.gain.setValueAtTime(1, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
-            } else if (type === 'kick') {
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(220, audioCtx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(20, audioCtx.currentTime + 0.15);
-                gain.gain.setValueAtTime(1, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
-                osc.start(); osc.stop(audioCtx.currentTime + 0.15);
-            } else if (type === 'dash') {
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(350, audioCtx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.08);
-                gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
-                osc.start(); osc.stop(audioCtx.currentTime + 0.08);
-            }
-        }
-
-        // --- GAME ENGINE ---
-        const canvas = document.getElementById("gameCanvas");
-        const ctx = canvas.getContext("2d");
-        let p1, p2, gameInterval, bossProjectiles = [], p1Stunned = false;
-        const keys = { left: false, right: false };
-
-        function startLevel(lvl) {
-            currentLevel = lvl;
-            showScreen('gameScreen');
-            document.getElementById('currentLvlTxt').innerText = lvl;
-            
-            let p1Bonus = equippedWeapon ? weaponsData[equippedWeapon].dmg : 0;
-            document.getElementById('p1DmgBonus').innerText = `+${p1Bonus}`;
-
-            // P2 Base Health: 100 + (lvl - 1) * 20
-            let p2MaxHp = 100 + (lvl - 1) * 20;
-
-            // AI Weapon Logic
-            let aiWeapon = null;
-            let aiBonusDmg = 0;
-            if (lvl >= 30) { aiWeapon = 'axe'; aiBonusDmg = 10; }
-            else if (lvl >= 20) { aiWeapon = 'sword'; aiBonusDmg = 5; }
-            else if (lvl >= 10) { aiWeapon = 'dagger'; aiBonusDmg = 1; }
-
-            p1 = { x: 100, y: 190, w: 30, h: 70, vx: 0, vy: 0, hp: 100, maxHp: 100, color: '#3498db', attacking: false, attackType: null, facingRight: true, isDashing: false, weapon: equippedWeapon, bonusDmg: p1Bonus };
-            p2 = { x: 470, y: 190, w: 30, h: 70, vx: 0, vy: 0, hp: p2MaxHp, maxHp: p2MaxHp, color: '#e74c3c', attacking: false, attackType: null, facingRight: false, isDashing: false, weapon: aiWeapon, bonusDmg: aiBonusDmg, skillTimer: 0 };
-
-            bossProjectiles = [];
-            p1Stunned = false;
-            updateUI();
-
-            if (gameInterval) clearInterval(gameInterval);
-            gameInterval = setInterval(update, 1000 / 60);
-        }
-
-        function jumpP1() { if (p1.y >= 190 && !p1Stunned) p1.vy = -12; }
-
-        function dashP1() {
-            if (p1.isDashing || p1Stunned) return;
-            p1.isDashing = true; playSound('dash');
-            p1.vx = (p1.facingRight ? 1 : -1) * 18;
-            setTimeout(() => { p1.isDashing = false; }, 120);
-        }
-
-        function attackP1(type) {
-            if (p1.attacking || p1Stunned) return;
-            p1.attacking = true; p1.attackType = type;
-            playSound(type);
-            
-            let range = type === 'punch' ? 50 : 65;
-            let damage = (type === 'punch' ? 8 : 12) + p1.bonusDmg;
-
-            if (Math.abs((p1.x + p1.w/2) - (p2.x + p2.w/2)) < range && Math.abs(p1.y - p2.y) < 40) {
-                p2.hp = Math.max(0, p2.hp - damage);
-                p2.x += p1.facingRight ? 15 : -15;
-                updateUI();
+            // Nếu đang đè nút Lướt (Dash) khi di chuyển
+            if (keys.dash && !player.dashCooldown) {
+                currentSpeed = player.speed * 2.5; // Tăng tốc độ khi lướt
             }
 
-            setTimeout(() => { p1.attacking = false; p1.attackType = null; }, 200);
+            if (keys.left) {
+                player.x -= currentSpeed;
+            }
+            if (keys.right) {
+                player.x += currentSpeed;
+            }
+
+            // Giới hạn trong màn hình
+            if (player.x < 0) player.x = 0;
+            if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
         }
 
-        // AI + BOSS SKILLS LOGIC
-        function updateAI() {
-            if (p2.hp <= 0 || p1.hp <= 0) return;
-            p2.facingRight = p2.x < p1.x;
-            let dist = Math.abs((p2.x + p2.w/2) - (p1.x + p1.w/2));
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // AI Speed & Smartness scales with Level
-            let aiSpeed = 2 + Math.min(currentLevel * 0.1, 2.5);
-            let dodgeChance = 0.3 + Math.min(currentLevel * 0.02, 0.5);
+            // Vẽ nhân vật
+            ctx.fillStyle = keys.dash ? '#ff0055' : '#00adb5';
+            ctx.fillRect(player.x, canvas.height / 2 - player.height / 2, player.width, player.height);
 
-            // Boss Special Skills
-            p2.skillTimer += 1/60;
-
-            // Boss Level 10: Multi-Punch (Mỗi 10s đấm liên hoàn 2s gây 5 dame liên tục)
-            if (currentLevel === 10 && p2.skillTimer >= 10) {
-                showNotice("TRÙM MÀN 10: ĐẤM LIÊN HOÀN!");
-                p2.skillTimer = 0;
-                let duration = 0;
-                let flurry = setInterval(() => {
-                    if (p2.hp <= 0) { clearInterval(flurry); return; }
-                    p2.attacking = true; p2.attackType = 'punch';
-                    playSound('punch');
-                    if (dist < 60) { p1.hp = Math.max(0, p1.hp - 5); updateUI(); }
-                    duration += 0.2;
-                    if (duration >= 2) { clearInterval(flurry); p2.attacking = false; }
-                }, 200);
-            }
-
-            // Boss Level 20: Kiếm Khí Tầm Xa (20 Dame)
-            if (currentLevel === 20 && p2.skillTimer >= 8) {
-                showNotice("TRÙM MÀN 20: KIẾM KHÍ!");
-                p2.skillTimer = 0;
-                playSound('dash');
-                bossProjectiles.push({ x: p2.x, y: p2.y + 20, vx: p2.facingRight ? 8 : -8, radius: 12 });
-            }
-
-            // Boss Level 30: Bổ Địa Chấn (Trói chân 3s)
-            if (currentLevel === 30 && p2.skillTimer >= 9) {
-                showNotice("TRÙM MÀN 30: BỔ ĐỊA CHẤN TRÓI CHÂN!");
-                p2.skillTimer = 0;
-                playSound('kick');
-                if (dist < 150) {
-                    p1Stunned = true;
-                    setTimeout(() => { p1Stunned = false; }, 3000);
-                }
-            }
-
-            // Dodge
-            if (p1.attacking && dist < 70 && Math.random() < dodgeChance && !p2.isDashing) {
-                p2.isDashing = true; playSound('dash');
-                p2.vx = p2.facingRight ? -14 : 14;
-                setTimeout(() => { p2.isDashing = false; }, 120);
-                return;
-            }
-
-            // Chase & Counter Attack
-            if (!p2.isDashing) {
-                if (dist > 50) p2.vx = p2.facingRight ? aiSpeed : -aiSpeed;
-                else {
-                    p2.vx = 0;
-                    if (!p2.attacking && Math.random() < (0.05 + currentLevel * 0.003)) {
-                        attackAI(Math.random() < 0.5 ? 'punch' : 'kick');
-                    }
-                }
-            }
+            requestAnimationFrame(gameLoop);
         }
 
-        function attackAI(type) {
-            if (p2.attacking) return;
-            p2.attacking = true; p2.attackType = type;
-            playSound(type);
-
-            let range = type === 'punch' ? 50 : 65;
-            let damage = (type === 'punch' ? 7 : 11) + p2.bonusDmg;
-
-            if (Math.abs((p2.x + p2.w/2) - (p1.x + p1.w/2)) < range && Math.abs(p2.y - p1.y) < 40) {
-                p1.hp = Math.max(0, p1.hp - damage);
-                p1.x += p2.facingRight ? 15 : -15;
-                updateUI();
-            }
-
-            setTimeout(() => { p2.attacking = false; p2.attackType = null; }, 200);
+        function gameLoop() {
+            update();
+            draw();
         }
 
-        function showNotice(msg) {
-            let el = document.getElementById('skillNotice');
-            el.innerText = msg;
-            setTimeout(() => { el.innerText = ''; }, 2000);
-        }
-
-        function updateUI() {
-            document.getElementById("p1Health").style.width = (p1.hp / p1.maxHp * 100) + "%";
-            document.getElementById("p2Health").style.width = (p2.hp / p2.maxHp * 100) + "%";
-        }
-
-        function drawFighter(char) {
-            ctx.save();
-            let cx = char.x + char.w / 2;
-            let cy = char.y;
-
-            ctx.strokeStyle = char.isDashing ? '#00ffff' : char.color;
-            ctx.fillStyle = char.color; ctx.lineWidth = 4;
-
-            // Stun effect
-            if (char === p1 && p1Stunned) ctx.strokeStyle = '#f1c40f';
-
-            // Head & Body
-            ctx.beginPath(); ctx.arc(cx, cy + 10, 10, 0, Math.PI * 2); ctx.fill();
-            ctx.beginPath(); ctx.moveTo(cx, cy + 20); ctx.lineTo(cx, cy + 45); ctx.stroke();
-
-            // Legs
-            ctx.beginPath();
-            if (char.attacking && char.attackType === 'kick') {
-                let kDir = char.facingRight ? 25 : -25;
-                ctx.moveTo(cx, cy + 45); ctx.lineTo(cx + kDir, cy + 40);
-                ctx.moveTo(cx, cy + 45); ctx.lineTo(cx - kDir/2, cy + 65);
-            } else {
-                ctx.moveTo(cx, cy + 45); ctx.lineTo(cx - 10, cy + 70);
-                ctx.moveTo(cx, cy + 45); ctx.lineTo(cx + 10, cy + 70);
-            }
-            ctx.stroke();
-
-            // Arms & Weapon Rendering
-            ctx.beginPath();
-            let armX = cx + (char.facingRight ? 20 : -20);
-            let armY = cy + 28;
-            if (char.attacking && char.attackType === 'punch') {
-                armX = cx + (char.facingRight ? 30 : -30);
-                ctx.moveTo(cx, cy + 28); ctx.lineTo(armX, armY);
-            } else {
-                ctx.moveTo(cx, cy + 28); ctx.lineTo(cx + (char.facingRight ? 10 : -10), cy + 35);
-            }
-            ctx.stroke();
-
-            // Render Weapon on Hand
-            if (char.weapon) {
-                ctx.fillStyle = '#f1c40f';
-                let wDir = char.facingRight ? 1 : -1;
-                if (char.weapon === 'dagger') {
-                    ctx.fillRect(armX, armY -
+        gameLoop();
+    </script>
+</body>
+</html>
