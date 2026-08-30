@@ -3,258 +3,158 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Game Màn Hình Ngang Multi-touch</title>
+    <title>Võ Sĩ Huyền Thoại - MultiTouch Landscape</title>
     <style>
         * {
             box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            user-select: none; /* Ngăn bôi đen văn bản khi chạm đè */
+            margin: 0; padding: 0;
+            user-select: none;
             -webkit-user-select: none;
             -webkit-touch-callout: none;
-            touch-action: none; /* Chống cuộn/panning mặc định trình duyệt */
+            touch-action: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body, html {
-            width: 100%;
-            height: 100%;
+            width: 100%; height: 100%;
             overflow: hidden;
-            background-color: #111;
+            background: #111; color: #fff;
             font-family: sans-serif;
+            text-align: center;
         }
 
-        /* Khung chứa game */
         #game-container {
             position: relative;
-            width: 100vw;
-            height: 100vh;
-            background: #222;
+            width: 100vw; height: 100vh;
         }
 
-        /* Canvas hiển thị game */
-        #gameCanvas {
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
-
-        /* Nút bật toàn màn hình & khóa ngang */
-        #fullscreen-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            padding: 10px 15px;
-            background: rgba(255, 255, 255, 0.8);
-            border: none;
-            border-radius: 5px;
-            font-weight: bold;
-            z-index: 100;
-        }
-
-        /* Giao diện nút điều khiển ảo overlay */
-        .controls {
-            position: absolute;
-            bottom: 20px;
-            width: 100%;
-            display: flex;
-            justify-content: space-between;
-            padding: 0 30px;
-            pointer-events: none; /* Rê/lướt qua vùng trống vẫn ghi nhận touch */
-        }
-
-        .btn-group {
-            display: flex;
-            gap: 15px;
-            pointer-events: auto;
-        }
-
-        .btn {
-            width: 70px;
-            height: 70px;
-            background: rgba(255, 255, 255, 0.3);
-            border: 2px solid rgba(255, 255, 255, 0.6);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 20px;
-            font-weight: bold;
-        }
-
-        .btn:active, .btn.active {
-            background: rgba(255, 255, 255, 0.7);
-            color: #000;
-        }
-
-        /* Cảnh báo nếu thiết bị ở màn hình dọc */
-        @media screen and (orientation: portrait) {
-            #portrait-warning {
-                display: flex !important;
-            }
-        }
-
-        #portrait-warning {
+        .screen {
             display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            color: white;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 999;
-            text-align: center;
-            padding: 20px;
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #111;
+            padding: 15px;
+            overflow-y: auto;
+            z-index: 20;
         }
+        .active { display: block !important; }
+
+        h1, h2 { color: #f1c40f; margin: 10px 0; }
+        .menu-btn { 
+            background: #27ae60; color: white; border: none; padding: 12px 25px; 
+            font-size: 16px; font-weight: bold; border-radius: 8px; margin: 8px auto; 
+            width: 60%; max-width: 300px; cursor: pointer; display: block;
+        }
+        .btn-shop { background: #e67e22; }
+        .btn-back { background: #7f8c8d; width: auto; padding: 6px 15px; font-size: 13px; display: inline-block; }
+
+        .coin-txt { font-size: 18px; color: #f1c40f; font-weight: bold; margin: 8px 0; }
+
+        .shop-item { background: #222; border: 2px solid #444; border-radius: 8px; padding: 10px; margin: 8px auto; width: 80%; max-width: 450px; display: flex; justify-content: space-between; align-items: center; }
+        .shop-item.equipped { border-color: #2ecc71; }
+        .buy-btn { background: #e74c3c; color: white; border: none; padding: 8px 12px; border-radius: 5px; font-weight: bold; }
+
+        .level-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin: 10px auto; max-width: 550px; }
+        .lvl-btn { background: #34495e; color: white; border: 2px solid #5d6d7e; border-radius: 8px; padding: 10px 0; font-size: 14px; font-weight: bold; }
+        .lvl-btn.boss { background: #c0392b; border-color: #f1c40f; }
+
+        #fullscreen-btn {
+            position: absolute; top: 8px; right: 8px;
+            padding: 6px 12px; background: rgba(255,255,255,0.8);
+            border: none; border-radius: 4px; font-weight: bold; font-size: 12px; z-index: 100;
+        }
+
+        /* Giao diện Gameplay */
+        #gameScreen { padding: 0; background: #000; overflow: hidden; }
+        .ui-bar { position: absolute; top: 0; left: 0; width: 100%; display: flex; justify-content: space-between; padding: 6px 15px; background: rgba(0,0,0,0.6); z-index: 10; font-size: 13px; }
+        .health-box { width: 120px; background: #444; height: 14px; border: 1px solid #fff; border-radius: 4px; overflow: hidden; display: inline-block; vertical-align: middle; }
+        .health-fill { height: 100%; width: 100%; background: #2ecc71; transition: width 0.1s; }
+        #p2Health { background: #e74c3c; }
+
+        canvas { display: block; width: 100vw; height: 100vh; }
+
+        .controls {
+            position: absolute; bottom: 15px; left: 0; width: 100%;
+            display: flex; justify-content: space-between; padding: 0 20px;
+            pointer-events: none; z-index: 10;
+        }
+        .btn-group { display: flex; gap: 8px; pointer-events: auto; }
+        .btn {
+            width: 52px; height: 52px; background: rgba(255,255,255,0.25);
+            border: 2px solid rgba(255,255,255,0.5); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-weight: bold; font-size: 13px;
+        }
+        .btn:active, .btn.active { background: rgba(255,255,255,0.7); color: #000; }
+        .btn-action { background: rgba(230, 126, 34, 0.4); }
+        .btn-dash { background: rgba(41, 128, 185, 0.4); }
+
+        #skillNotice { position: absolute; top: 35px; width: 100%; color: #e74c3c; font-weight: bold; font-size: 16px; z-index: 10; pointer-events: none; }
     </style>
 </head>
 <body>
 
-    <!-- Màn hình cảnh báo khi xoay dọc -->
-    <div id="portrait-warning">
-        <h2>Vui lòng xoay ngang màn hình để chơi</h2>
-        <p>Hoặc nhấn nút bên dưới để vào chế độ Toàn màn hình ngang</p>
-    </div>
-
     <div id="game-container">
-        <button id="fullscreen-btn">Xoay Ngang & Toàn Màn Hình</button>
-        <canvas id="gameCanvas"></canvas>
+        <button id="fullscreen-btn" onclick="toggleFullscreen()">Xoay Ngang / Fullscreen</button>
 
-        <!-- Nút di chuyển và lướt (Dash) -->
-        <div class="controls">
-            <div class="btn-group">
-                <div class="btn" id="btn-left">◄</div>
-                <div class="btn" id="btn-right">►</div>
-            </div>
-            <div class="btn-group">
-                <div class="btn" id="btn-dash">LƯỚT</div>
-            </div>
+        <div id="lobbyScreen" class="screen active">
+            <h1>VÕ SĨ HUYỀN THOẠI</h1>
+            <div class="coin-txt">💰 Xu: <span id="lobbyCoins">0</span></div>
+            <button class="menu-btn" onclick="showScreen('levelScreen')">🎮 CHƠI GAME</button>
+            <button class="menu-btn btn-shop" onclick="showScreen('shopScreen')">🛒 CỬA HÀNG</button>
         </div>
-    </div>
 
-    <script>
-        // ----------------------------------------------------
-        // 1. KHÓA MÀN HÌNH NGANG (SCREEN ORIENTATION LOCK)
-        // ----------------------------------------------------
-        const fullscreenBtn = document.getElementById('fullscreen-btn');
+        <div id="shopScreen" class="screen">
+            <h2>CỬA HÀNG VŨ KHÍ</h2>
+            <div class="coin-txt">💰 Xu: <span id="shopCoins">0</span></div>
+            
+            <div class="shop-item" id="item-dagger">
+                <div style="text-align:left;">
+                    <b style="color:#bdc3c7;">🗡️ Dao Găm</b><br><small>Giá: 5 Xu | Sát thương: +1</small>
+                </div>
+                <button class="buy-btn" onclick="buyWeapon('dagger', 5, 1)">Mua (5 Xu)</button>
+            </div>
 
-        async function lockLandscape() {
-            try {
-                if (document.documentElement.requestFullscreen) {
-                    await document.documentElement.requestFullscreen();
-                }
-                if (screen.orientation && screen.orientation.lock) {
-                    await screen.orientation.lock('landscape');
-                }
-            } catch (err) {
-                console.log("Không thể tự động khóa xoay ngang:", err);
-            }
-        }
+            <div class="shop-item" id="item-sword">
+                <div style="text-align:left;">
+                    <b style="color:#f1c40f;">⚔️ Kiếm</b><br><small>Giá: 20 Xu | Sát thương: +5</small>
+                </div>
+                <button class="buy-btn" onclick="buyWeapon('sword', 20, 5)">Mua (20 Xu)</button>
+            </div>
 
-        fullscreenBtn.addEventListener('click', lockLandscape);
+            <div class="shop-item" id="item-axe">
+                <div style="text-align:left;">
+                    <b style="color:#e74c3c;">🪓 Rìu</b><br><small>Giá: 30 Xu | Sát thương: +10</small>
+                </div>
+                <button class="buy-btn" onclick="buyWeapon('axe', 30, 10)">Mua (30 Xu)</button>
+            </div>
 
-        // ----------------------------------------------------
-        // 2. XỬ LÝ ĐA ĐIỂM (MULTI-TOUCH) ĐỂ VỪA GIỮ NÚT VỪA LƯỚT
-        // ----------------------------------------------------
-        const keys = {
-            left: false,
-            right: false,
-            dash: false
-        };
+            <button class="menu-btn btn-back" onclick="showScreen('lobbyScreen')">⬅️ Quay Lại</button>
+        </div>
 
-        const btnLeft = document.getElementById('btn-left');
-        const btnRight = document.getElementById('btn-right');
-        const btnDash = document.getElementById('btn-dash');
+        <div id="levelScreen" class="screen">
+            <h2>CHỌN MÀN CHƠI</h2>
+            <button class="menu-btn btn-back" onclick="showScreen('lobbyScreen')">⬅️ Sảnh Game</button>
+            <div class="level-grid" id="levelGrid"></div>
+        </div>
 
-        // Hàm kiểm tra điểm chạm (touch) đang đè lên nút nào
-        function setupTouchControl(element, actionKey) {
-            element.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                keys[actionKey] = true;
-                element.classList.add('active');
-            }, { passive: false });
+        <div id="gameScreen" class="screen">
+            <div class="ui-bar">
+                <div>P1 (LVL <span id="p1DmgBonus">+0</span>) <div class="health-box"><div id="p1Health" class="health-fill"></div></div></div>
+                <button class="btn-back" onclick="quitToLobby()">Thoát</button>
+                <div>Màn <span id="currentLvlTxt">1</span> (AI) <div class="health-box"><div id="p2Health" class="health-fill"></div></div></div>
+            </div>
+            <div id="skillNotice"></div>
+            
+            <canvas id="gameCanvas"></canvas>
 
-            element.addEventListener('touchend', (e) => {
-                e.preventDefault();
-                keys[actionKey] = false;
-                element.classList.remove('active');
-            }, { passive: false });
-
-            element.addEventListener('touchcancel', (e) => {
-                e.preventDefault();
-                keys[actionKey] = false;
-                element.classList.remove('active');
-            }, { passive: false });
-        }
-
-        setupTouchControl(btnLeft, 'left');
-        setupTouchControl(btnRight, 'right');
-        setupTouchControl(btnDash, 'dash');
-
-        // ----------------------------------------------------
-        // 3. CANVAS GAME DEMO
-        // ----------------------------------------------------
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
-
-        // Nhân vật
-        const player = {
-            x: 100,
-            y: 200,
-            width: 40,
-            height: 40,
-            speed: 5,
-            isDashing: false,
-            dashCooldown: false
-        };
-
-        function update() {
-            let currentSpeed = player.speed;
-
-            // Nếu đang đè nút Lướt (Dash) khi di chuyển
-            if (keys.dash && !player.dashCooldown) {
-                currentSpeed = player.speed * 2.5; // Tăng tốc độ khi lướt
-            }
-
-            if (keys.left) {
-                player.x -= currentSpeed;
-            }
-            if (keys.right) {
-                player.x += currentSpeed;
-            }
-
-            // Giới hạn trong màn hình
-            if (player.x < 0) player.x = 0;
-            if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
-        }
-
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Vẽ nhân vật
-            ctx.fillStyle = keys.dash ? '#ff0055' : '#00adb5';
-            ctx.fillRect(player.x, canvas.height / 2 - player.height / 2, player.width, player.height);
-
-            requestAnimationFrame(gameLoop);
-        }
-
-        function gameLoop() {
-            update();
-            draw();
-        }
-
-        gameLoop();
-    </script>
-</body>
-</html>
+            <div class="controls">
+                <div class="btn-group">
+                    <div class="btn" id="btn-left">◄</div>
+                    <div class="btn" id="btn-right">►</div>
+                </div>
+                <div class="btn-group">
+                    <div class="btn btn-action" id="btn-punch">Đấm</div>
+                    <div class="btn btn
+                        
