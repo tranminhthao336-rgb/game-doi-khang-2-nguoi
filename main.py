@@ -1,158 +1,152 @@
-import pygame
-import sys
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Game Doi Khang Pixel</title>
+    <style>
+        * { box-sizing: border-box; touch-action: manipulation; user-select: none; }
+        body { margin: 0; background: #111; color: #fff; font-family: sans-serif; text-align: center; }
+        .game-container { position: relative; width: 100%; max-width: 600px; margin: 0 auto; }
+        
+        /* Thanh Máu */
+        .ui-bar { display: flex; justify-content: space-between; padding: 10px; background: #222; }
+        .health-box { width: 45%; background: #444; height: 20px; border: 2px solid #fff; border-radius: 5px; overflow: hidden; }
+        .health-fill { height: 100%; width: 100%; background: #2ecc71; transition: width 0.1s; }
+        #p2Health { background: #e74c3c; float: right; }
 
-# Khởi tạo Pygame
-pygame.init()
+        canvas { background: #1a1a2e; border-bottom: 4px solid #4e4e50; display: block; width: 100%; height: auto; }
 
-# Cấu hình màn hình
-WIDTH, HEIGHT = 800, 500
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Game Danh Nhau 2 Nguoi")
-clock = pygame.time.Clock()
+        /* Phím điều khiển cảm ứng cho điện thoại */
+        .controls { display: flex; justify-content: space-between; padding: 15px 10px; max-width: 600px; margin: 0 auto; }
+        .btn-group { display: grid; grid-template-columns: repeat(3, 50px); grid-gap: 8px; }
+        .btn { background: #333; color: #fff; border: 2px solid #555; border-radius: 10px; font-weight: bold; font-size: 16px; height: 50px; width: 50px; display: flex; align-items: center; justify-content: center; }
+        .btn:active { background: #666; }
+        .btn-punch { background: #e67e22; }
+        .btn-kick { background: #e74c3c; }
+        #restartBtn { display: none; margin: 10px auto; padding: 10px 20px; background: #27ae60; color: white; border: none; font-size: 16px; font-weight: bold; border-radius: 5px; }
+    </style>
+</head>
+<body>
 
-# Màu sắc
-WHITE = (255, 255, 255)
-GRAY = (50, 50, 50)
-GREEN = (0, 255, 0)
-RED = (255, 0, 0)
-YELLOW = (255, 255, 0)
+    <div class="game-container">
+        <div class="ui-bar">
+            <div>Player 1<div class="health-box"><div id="p1Health" class="health-fill"></div></div></div>
+            <div>AI / Player 2<div class="health-box"><div id="p2Health" class="health-fill"></div></div></div>
+        </div>
+        <canvas id="gameCanvas" width="600" height="300"></canvas>
+        <button id="restartBtn" onclick="initGame()">🎮 Chơi Lại</button>
+    </div>
 
-# Lớp Nhân Vật
-class Player:
-    def __init__(self, x, y, color, controls):
-        self.rect = pygame.Rect(x, y, 50, 80)
-        self.color = color
-        self.controls = controls  # Phím điều khiển [Trái, Phải, Nhảy, Đánh]
-        self.vel_y = 0
-        self.is_jumping = False
-        self.health = 100
-        self.attacking = False
-        self.attack_cooldown = 0
-        self.attack_rect = pygame.Rect(0, 0, 0, 0)
-        self.facing_right = True
+    <!-- Phím Bấm Điện Thoại -->
+    <div class="controls">
+        <div class="btn-group">
+            <button class="btn" onclick="moveP1(-1)">◄</button>
+            <button class="btn" onclick="jumpP1()">▲</button>
+            <button class="btn" onclick="moveP1(1)">►</button>
+        </div>
+        <div class="btn-group" style="grid-template-columns: repeat(2, 55px);">
+            <button class="btn btn-punch" onclick="attackP1('punch')">Đấm</button>
+            <button class="btn btn-kick" onclick="attackP1('kick')">Đá</button>
+        </div>
+    </div>
 
-    def move(self, keys):
-        dx = 0
-        gravity = 0.8
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
 
-        # Di chuyển trái/phải
-        if keys[self.controls['left']]:
-            dx = -5
-            self.facing_right = False
-        if keys[self.controls['right']]:
-            dx = 5
-            self.facing_right = True
+        let p1, p2, gameInterval;
 
-        # Nhảy
-        if keys[self.controls['jump']] and not self.is_jumping:
-            self.vel_y = -15
-            self.is_jumping = True
+        function initGame() {
+            document.getElementById("restartBtn").style.display = "none";
+            p1 = { x: 80, y: 200, w: 30, h: 60, vx: 0, vy: 0, hp: 100, color: '#3498db', attacking: false };
+            p2 = { x: 480, y: 200, w: 30, h: 60, vx: 0, vy: 0, hp: 100, color: '#e74c3c', attacking: false };
+            updateUI();
+            if (gameInterval) clearInterval(gameInterval);
+            gameInterval = setInterval(update, 1000 / 60);
+        }
 
-        # Trọng lực
-        self.vel_y += gravity
-        dy = self.vel_y
+        function moveP1(dir) { p1.vx = dir * 4; setTimeout(() => p1.vx = 0, 150); }
+        function jumpP1() { if (p1.y >= 200) p1.vy = -12; }
 
-        # Va chạm sàn nhà
-        if self.rect.bottom + dy >= HEIGHT - 50:
-            dy = HEIGHT - 50 - self.rect.bottom
-            self.is_jumping = False
+        function attackP1(type) {
+            if (p1.attacking) return;
+            p1.attacking = true;
+            
+            // Tầm đánh
+            let range = type === 'punch' ? 40 : 55;
+            let damage = type === 'punch' ? 8 : 12;
 
-        # Giới hạn màn hình
-        if self.rect.left + dx < 0:
-            dx = -self.rect.left
-        if self.rect.right + dx > WIDTH:
-            dx = WIDTH - self.rect.right
+            if (Math.abs((p1.x + p1.w/2) - (p2.x + p2.w/2)) < range && Math.abs(p1.y - p2.y) < 40) {
+                p2.hp = Math.max(0, p2.hp - damage);
+                p2.x += 15; // Đẩy lùi đối thủ khi trúng đòn
+                updateUI();
+            }
 
-        # Cập nhật vị trí
-        self.rect.x += dx
-        self.rect.y += dy
+            setTimeout(() => { p1.attacking = false; }, 200);
+        }
 
-    def attack(self, target):
-        if self.attack_cooldown == 0:
-            self.attacking = True
-            # Tạo vùng đấm phía trước nhân vật
-            attack_x = self.rect.right if self.facing_right else self.rect.left - 40
-            self.attack_rect = pygame.Rect(attack_x, self.rect.y + 20, 40, 20)
+        // AI Máy đơn giản tự di chuyển và tấn công
+        function updateAI() {
+            if (p2.hp <= 0 || p1.hp <= 0) return;
+            if (p2.x > p1.x + 40) p2.x -= 1.5;
+            else if (p2.x < p1.x - 40) p2.x += 1.5;
 
-            # Kiểm tra trúng đối phương
-            if self.attack_rect.colliderect(target.rect):
-                target.health -= 10
-                if target.health < 0:
-                    target.health = 0
+            // Tự đánh khi lại gần
+            if (Math.abs(p2.x - p1.x) < 45 && Math.random() < 0.03) {
+                p1.hp = Math.max(0, p1.hp - 6);
+                p1.x -= 10;
+                updateUI();
+            }
+        }
 
-            self.attack_cooldown = 20  # Thời gian hồi đòn
+        function updateUI() {
+            document.getElementById("p1Health").style.width = p1.hp + "%";
+            document.getElementById("p2Health").style.width = p2.hp + "%";
+        }
 
-    def update(self):
-        if self.attack_cooldown > 0:
-            self.attack_cooldown -= 1
-            if self.attack_cooldown < 15:
-                self.attacking = False
+        function update() {
+            // Trọng lực & Di chuyển
+            p1.x += p1.vx; p1.y += p1.vy;
+            if (p1.y < 200) p1.vy += 0.8; else { p1.y = 200; p1.vy = 0; }
+            
+            // Giới hạn màn hình
+            p1.x = Math.max(0, Math.min(canvas.width - p1.w, p1.x));
+            p2.x = Math.max(0, Math.min(canvas.width - p2.w, p2.x));
 
-    def draw(self, surface):
-        # Vẽ nhân vật
-        pygame.draw.rect(surface, self.color, self.rect)
-        # Vẽ hiệu ứng đấm
-        if self.attacking:
-            pygame.draw.rect(surface, YELLOW, self.attack_rect)
+            updateAI();
 
-# Cấu hình phím bấm cho 2 người chơi
-p1_controls = {'left': pygame.K_a, 'right': pygame.K_d, 'jump': pygame.K_w, 'attack': pygame.K_f}
-p2_controls = {'left': pygame.K_LEFT, 'right': pygame.K_RIGHT, 'jump': pygame.K_UP, 'attack': pygame.K_KP_ENTER}
+            // Vẽ màn hình
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Vẽ Sàn nhà
+            ctx.fillStyle = '#333';
+            ctx.fillRect(0, 260, canvas.width, 40);
 
-# Khởi tạo 2 người chơi
-player1 = Player(150, 300, GREEN, p1_controls)
-player2 = Player(600, 300, RED, p2_controls)
+            // Vẽ P1
+            ctx.fillStyle = p1.color;
+            ctx.fillRect(p1.x, p1.y, p1.w, p1.h);
+            if (p1.attacking) {
+                ctx.fillStyle = '#f1c40f';
+                ctx.fillRect(p1.x + p1.w, p1.y + 15, 20, 10); // Hiệu ứng tay đấm
+            }
 
-# Vẽ thanh máu
-def draw_health_bar(surface, health, x, y):
-    pygame.draw.rect(surface, WHITE, (x - 2, y - 2, 204, 24))
-    pygame.draw.rect(surface, RED, (x, y, 200, 20))
-    pygame.draw.rect(surface, GREEN, (x, y, health * 2, 20))
+            // Vẽ P2
+            ctx.fillStyle = p2.color;
+            ctx.fillRect(p2.x, p2.y, p2.w, p2.h);
 
-# Vòng lặp chính của Game
-running = True
-font = pygame.font.Font(None, 60)
+            // Kiểm tra Thua / Thắng
+            if (p1.hp <= 0 || p2.hp <= 0) {
+                clearInterval(gameInterval);
+                ctx.fillStyle = "#fff";
+                ctx.font = "bold 30px sans-serif";
+                ctx.textAlign = "center";
+                ctx.fillText(p1.hp > 0 ? "PLAYER 1 THẮNG!" : "AI THẮNG!", canvas.width / 2, 140);
+                document.getElementById("restartBtn").style.display = "block";
+            }
+        }
 
-while running:
-    clock.tick(60)
-    screen.fill(GRAY)
-
-    # Vẽ sàn nhà
-    pygame.draw.rect(screen, WHITE, (0, HEIGHT - 50, WIDTH, 50))
-
-    # Bắt sự kiện
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        if event.type == pygame.KEYDOWN:
-            if event.key == player1.controls['attack']:
-                player1.attack(player2)
-            if event.key == player2.controls['attack']:
-                player2.attack(player1)
-
-    # Cập nhật trạng thái
-    keys = pygame.key.get_pressed()
-    if player1.health > 0 and player2.health > 0:
-        player1.move(keys)
-        player2.move(keys)
-        player1.update()
-        player2.update()
-
-    # Vẽ nhân vật và thanh máu
-    player1.draw(screen)
-    player2.draw(screen)
-    draw_health_bar(screen, player1.health, 50, 30)
-    draw_health_bar(screen, player2.health, 550, 30)
-
-    # Kiểm tra thắng thua
-    if player1.health <= 0:
-        win_text = font.render("NGUOI CHOI 2 THANG!", True, RED)
-        screen.blit(win_text, (WIDTH // 2 - 220, HEIGHT // 2 - 50))
-    elif player2.health <= 0:
-        win_text = font.render("NGUOI CHOI 1 THANG!", True, GREEN)
-        screen.blit(win_text, (WIDTH // 2 - 220, HEIGHT // 2 - 50))
-
-    pygame.display.flip()
-
-pygame.quit()
-sys.exit()
+        initGame();
+    </script>
+</body>
+</html>
