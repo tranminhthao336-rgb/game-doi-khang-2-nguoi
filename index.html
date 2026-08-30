@@ -3,12 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Game Đối Kháng Mobile - Smart AI</title>
+    <title>Game Đối Kháng Mobile</title>
     <style>
         * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
         body { margin: 0; background: #1a1a1a; color: white; font-family: sans-serif; text-align: center; }
-        canvas { background: #222; border: 2px solid #fff; width: 100%; max-width: 600px; height: auto; display: block; margin: 10px auto; }
         
+        #game-container { position: relative; max-width: 600px; margin: 10px auto; }
+        canvas { background: #222; border: 2px solid #fff; width: 100%; height: auto; display: block; }
+        
+        /* Bảng thông báo Thắng/Thua & Nút Chơi tiếp */
+        #game-over-screen {
+            display: none;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            flex-direction: column; align-items: center; justify-content: center;
+        }
+        #game-over-title { font-size: 28px; font-weight: bold; margin-bottom: 15px; }
+        #restart-btn {
+            padding: 12px 24px; font-size: 18px; font-weight: bold;
+            background: #27ae60; color: white; border: none; border-radius: 8px;
+            cursor: pointer;
+        }
+        #restart-btn:active { background: #2ecc71; }
+
+        /* Nút cảm ứng */
         .controls { display: flex; justify-content: space-between; max-width: 600px; margin: 0 auto; padding: 10px; }
         .group { display: flex; gap: 10px; }
         .btn {
@@ -24,7 +42,15 @@
 </head>
 <body>
 
-<canvas id="game" width="600" height="300"></canvas>
+<div id="game-container">
+    <canvas id="game" width="600" height="300"></canvas>
+    
+    <!-- MÀN HÌNH KẾT THÚC GAME -->
+    <div id="game-over-screen">
+        <div id="game-over-title">BẠN THẮNG!</div>
+        <button id="restart-btn" onclick="resetGame()">Chơi tiếp</button>
+    </div>
+</div>
 
 <div class="controls">
     <div class="group">
@@ -43,9 +69,11 @@ const ctx = canvas.getContext('2d');
 
 const GRAVITY = 0.5;
 const GROUND = 260;
+let isGameOver = false;
 
-const p1 = { x: 50, y: 100, vx: 0, vy: 0, w: 30, h: 60, hp: 100, color: 'red', attacking: false };
-const p2 = { x: 500, y: 100, vx: 0, vy: 0, w: 30, h: 60, hp: 100, color: 'dodgerblue', attacking: false, attackCooldown: false };
+// Thêm biến facingRight để lưu hướng quay mặt của nhân vật (1: Phải, -1: Trái)
+const p1 = { x: 50, y: 100, vx: 0, vy: 0, w: 30, h: 60, hp: 100, color: 'red', attacking: false, facingRight: 1 };
+const p2 = { x: 500, y: 100, vx: 0, vy: 0, w: 30, h: 60, hp: 100, color: 'dodgerblue', attacking: false, attackCooldown: false, facingRight: -1 };
 
 const inputs = { left: false, right: false };
 
@@ -61,11 +89,11 @@ bindBtn('btn-left', () => inputs.left = true, () => inputs.left = false);
 bindBtn('btn-right', () => inputs.right = true, () => inputs.right = false);
 
 bindBtn('btn-jump', () => {
-    if (p1.y + p1.h >= GROUND) p1.vy = -12;
+    if (p1.y + p1.h >= GROUND && !isGameOver) p1.vy = -12;
 });
 
 bindBtn('btn-attack', () => {
-    if (!p1.attacking) {
+    if (!p1.attacking && !isGameOver) {
         p1.attacking = true;
         setTimeout(() => p1.attacking = false, 150);
     }
@@ -74,8 +102,8 @@ bindBtn('btn-attack', () => {
 const keys = {};
 window.onkeydown = e => {
     keys[e.code] = true;
-    if (e.code === 'KeyW' && p1.y + p1.h >= GROUND) p1.vy = -12;
-    if (e.code === 'Space' && !p1.attacking) {
+    if (e.code === 'KeyW' && p1.y + p1.h >= GROUND && !isGameOver) p1.vy = -12;
+    if (e.code === 'Space' && !p1.attacking && !isGameOver) {
         p1.attacking = true;
         setTimeout(() => p1.attacking = false, 150);
     }
@@ -87,43 +115,46 @@ function isHit(r1, r2) {
            r1.y < r2.y + r2.h && r1.y + r1.h > r2.y;
 }
 
-// LOGIC MÁY (AI) ĐÁNH TRẢ
 function updateAI() {
     const distance = p1.x - p2.x;
+    p2.facingRight = distance > 0 ? 1 : -1; // Máy tự quay mặt về hướng P1
 
-    // Di chuyển áp sát người chơi
     if (Math.abs(distance) > 40) {
-        p2.vx = distance > 0 ? 3 : -3;
+        p2.vx = p2.facingRight * 3;
     } else {
         p2.vx = 0;
-        // Đấm trả khi vào tầm đánh
         if (!p2.attacking && !p2.attackCooldown) {
             p2.attacking = true;
             p2.attackCooldown = true;
             setTimeout(() => p2.attacking = false, 150);
-            setTimeout(() => p2.attackCooldown = false, 600); // Máy đấm cách nhau 0.6s
+            setTimeout(() => p2.attackCooldown = false, 600);
         }
     }
 
-    // Máy tự nhảy theo nếu người chơi nhảy cao hơn
     if (p1.y < p2.y - 20 && p2.y + p2.h >= GROUND && Math.random() < 0.05) {
         p2.vy = -12;
     }
 }
 
-// GIỚI HẠN KHÔNG CHO VĂNG RỎI MÀN HÌNH
 function keepInBounds(char) {
     if (char.x < 0) char.x = 0;
     if (char.x + char.w > canvas.width) char.x = canvas.width - char.w;
 }
 
 function loop() {
-    // Điều khiển P1
-    p1.vx = 0;
-    if (inputs.left || keys['KeyA']) p1.vx = -4;
-    if (inputs.right || keys['KeyD']) p1.vx = 4;
+    if (isGameOver) return;
 
-    // Cập nhật AI cho Máy
+    // Di chuyển & Cập nhật hướng quay mặt cho P1
+    p1.vx = 0;
+    if (inputs.left || keys['KeyA']) { 
+        p1.vx = -4; 
+        p1.facingRight = -1; // Quay sang trái
+    }
+    if (inputs.right || keys['KeyD']) { 
+        p1.vx = 4; 
+        p1.facingRight = 1;  // Quay sang phải
+    }
+
     updateAI();
 
     // Vật lý P1
@@ -131,63 +162,71 @@ function loop() {
     if (p1.y + p1.h > GROUND) { p1.y = GROUND - p1.h; p1.vy = 0; }
     keepInBounds(p1);
 
-    // Vật lý P2 (Máy)
+    // Vật lý P2
     p2.x += p2.vx; p2.y += p2.vy; p2.vy += GRAVITY;
     if (p2.y + p2.h > GROUND) { p2.y = GROUND - p2.h; p2.vy = 0; }
     keepInBounds(p2);
 
-    // Hitbox đòn đánh P1 (hướng bên phải)
-    const hitBoxP1 = { x: p1.x + p1.w, y: p1.y + 10, w: 35, h: 20 };
+    // XUẤT ĐÒN TẤN CÔNG THEO HƯỚNG MẶT (facingRight)
+    const hitBoxP1 = { 
+        x: p1.facingRight === 1 ? p1.x + p1.w : p1.x - 35, 
+        y: p1.y + 10, w: 35, h: 20 
+    };
     if (p1.attacking && isHit(hitBoxP1, p2)) {
         p1.attacking = false;
         p2.hp = Math.max(0, p2.hp - 10);
-        p2.x += 20; // Đẩy lùi máy
+        p2.x += p1.facingRight * 20; // Đẩy lùi P2 theo hướng đánh
     }
 
-    // Hitbox đòn đánh P2 (hướng theo phía người chơi)
-    const p2FacingLeft = p1.x < p2.x;
     const hitBoxP2 = { 
-        x: p2FacingLeft ? p2.x - 35 : p2.x + p2.w, 
-        y: p2.y + 10, 
-        w: 35, 
-        h: 20 
+        x: p2.facingRight === 1 ? p2.x + p2.w : p2.x - 35, 
+        y: p2.y + 10, w: 35, h: 20 
     };
     if (p2.attacking && isHit(hitBoxP2, p1)) {
         p2.attacking = false;
         p1.hp = Math.max(0, p1.hp - 10);
-        p1.x += p2FacingLeft ? -20 : 20; // Đẩy lùi người chơi
+        p1.x += p2.facingRight * 20;
     }
 
     // VẼ KHUNG HÌNH
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Mặt đất
     ctx.fillStyle = '#666';
     ctx.fillRect(0, GROUND, canvas.width, 40);
 
-    // Nhân vật
     ctx.fillStyle = p1.color; ctx.fillRect(p1.x, p1.y, p1.w, p1.h);
     ctx.fillStyle = p2.color; ctx.fillRect(p2.x, p2.y, p2.w, p2.h);
 
-    // Hiệu ứng đòn đánh
+    // Draw Hiệu ứng đấm
     if (p1.attacking) { ctx.fillStyle = 'yellow'; ctx.fillRect(hitBoxP1.x, hitBoxP1.y, hitBoxP1.w, hitBoxP1.h); }
     if (p2.attacking) { ctx.fillStyle = 'orange'; ctx.fillRect(hitBoxP2.x, hitBoxP2.y, hitBoxP2.w, hitBoxP2.h); }
 
-    // UI Thanh máu
+    // UI Máu
     ctx.fillStyle = 'white';
     ctx.font = '14px sans-serif';
-    ctx.fillText(`P1 (Bạn): ${p1.hp} HP`, 20, 25);
-    ctx.fillText(`P2 (Máy): ${p2.hp} HP`, 470, 25);
+    ctx.fillText(`P1: ${p1.hp} HP`, 20, 25);
+    ctx.fillText(`P2: ${p2.hp} HP`, 470, 25);
 
-    // Kết thúc Game
+    // KẾT THÚC GAME
     if (p1.hp <= 0 || p2.hp <= 0) {
-        ctx.fillStyle = 'white';
-        ctx.font = '24px sans-serif';
-        ctx.fillText(p1.hp <= 0 ? 'MÁY THẮNG!' : 'BẠN THẮNG!', canvas.width / 2 - 70, canvas.height / 2);
+        isGameOver = true;
+        const screen = document.getElementById('game-over-screen');
+        const title = document.getElementById('game-over-title');
+        title.innerText = p1.hp <= 0 ? 'BẠN ĐÃ THUA!' : 'BẠN THẮNG!';
+        screen.style.display = 'flex';
         return;
     }
 
     requestAnimationFrame(loop);
+}
+
+// CHỨC NĂNG RESET GAME
+function resetGame() {
+    p1.hp = 100; p1.x = 50; p1.y = 100; p1.facingRight = 1;
+    p2.hp = 100; p2.x = 500; p2.y = 100; p2.facingRight = -1;
+    isGameOver = false;
+    document.getElementById('game-over-screen').style.display = 'none';
+    loop();
 }
 
 loop();
