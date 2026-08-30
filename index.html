@@ -1,90 +1,146 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Core Fighting Game</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Game Đối Kháng Mobile - Co</title>
     <style>
-        canvas { background: #222; border: 2px solid #fff; display: block; margin: 20px auto; }
+        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+        body { margin: 0; background: #1a1a1a; color: white; font-family: sans-serif; text-align: center; }
+        canvas { background: #222; border: 2px solid #fff; width: 100%; max-width: 600px; height: auto; display: block; margin: 10px auto; }
+        
+        /* Bố trí các nút bấm cảm ứng */
+        .controls { display: flex; justify-content: space-between; max-width: 600px; margin: 0 auto; padding: 10px; }
+        .group { display: flex; gap: 10px; }
+        .btn {
+            width: 55px; height: 55px; background: #444; border: 2px solid #fff; border-radius: 50%;
+            color: white; font-size: 20px; font-weight: bold;
+            display: flex; align-items: center; justify-content: center;
+            touch-action: manipulation;
+        }
+        .btn:active { background: #777; }
+        .btn-attack { background: #b22222; }
+        .btn-jump { background: #2e8b57; }
     </style>
 </head>
 <body>
 
 <canvas id="game" width="600" height="300"></canvas>
 
+<!-- CÁC NÚT ĐIỀU KHIỂN CẢM ỨNG -->
+<div class="controls">
+    <!-- Cụm di chuyển & Nhảy bên trái -->
+    <div class="group">
+        <div class="btn" id="btn-left">◀</div>
+        <div class="btn" id="btn-right">▶</div>
+        <div class="btn btn-jump" id="btn-jump">▲</div>
+    </div>
+    <!-- Cụm tấn công bên phải -->
+    <div class="group">
+        <div class="btn btn-attack" id="btn-attack">⚔️</div>
+    </div>
+</div>
+
 <script>
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 
-// 1. CẤU HÌNH HỆ THỐNG
 const GRAVITY = 0.5;
 const GROUND = 260;
 
-// 2. TẠO KHUNG NHÂN VẬT (OBJECT)
 const p1 = { x: 50, y: 100, vx: 0, vy: 0, w: 30, h: 60, hp: 100, color: 'red', attacking: false };
 const p2 = { x: 500, y: 100, vx: 0, vy: 0, w: 30, h: 60, hp: 100, color: 'blue', attacking: false };
 
+const inputs = { left: false, right: false };
+
+// Hàm hỗ trợ gán sự kiện Chạm (Touch) & Click cho nút bấm
+function bindBtn(id, onPressDown, onPressUp) {
+    const el = document.getElementById(id);
+    el.addEventListener('touchstart', (e) => { e.preventDefault(); onPressDown(); });
+    el.addEventListener('touchend', (e) => { e.preventDefault(); if (onPressUp) onPressUp(); });
+    el.addEventListener('mousedown', () => onPressDown());
+    el.addEventListener('mouseup', () => { if (onPressUp) onPressUp(); });
+}
+
+// 1. Nút di chuyển Trái / Phải
+bindBtn('btn-left', () => inputs.left = true, () => inputs.left = false);
+bindBtn('btn-right', () => inputs.right = true, () => inputs.right = false);
+
+// 2. Nút NHẢY (Chỉ nhảy khi đang đứng trên mặt đất)
+bindBtn('btn-jump', () => {
+    if (p1.y + p1.h >= GROUND) {
+        p1.vy = -12;
+    }
+});
+
+// 3. Nút ĐẤM
+bindBtn('btn-attack', () => {
+    if (!p1.attacking) {
+        p1.attacking = true;
+        setTimeout(() => p1.attacking = false, 150);
+    }
+});
+
+// Hỗ trợ thêm phím Bàn phím máy tính (W = Nhảy)
 const keys = {};
 window.onkeydown = e => {
     keys[e.code] = true;
+    if (e.code === 'KeyW' && p1.y + p1.h >= GROUND) p1.vy = -12;
     if (e.code === 'Space' && !p1.attacking) {
         p1.attacking = true;
-        setTimeout(() => p1.attacking = false, 150); // Đòn đánh kéo dài 150ms
+        setTimeout(() => p1.attacking = false, 150);
     }
 };
 window.onkeyup = e => keys[e.code] = false;
 
-// 3. THUẬT TOÁN XỬ LÝ VA CHẠM (HITBOX)
-function isHit(rect1, rect2) {
-    return rect1.x < rect2.x + rect2.w &&
-           rect1.x + rect1.w > rect2.x &&
-           rect1.y < rect2.y + rect2.h &&
-           rect1.y + rect1.h > rect2.y;
+function isHit(r1, r2) {
+    return r1.x < r2.x + r2.w && r1.x + r1.w > r2.x &&
+           r1.y < r2.y + r2.h && r1.y + r1.h > r2.y;
 }
 
-// 4. VÒNG LẶP CHÍNH (GAME LOOP)
 function loop() {
-    // A. Điều khiển P1
+    // Xử lý di chuyển P1
     p1.vx = 0;
-    if (keys['KeyA']) p1.vx = -4;
-    if (keys['KeyD']) p1.vx = 4;
-    if (keys['KeyW'] && p1.y + p1.h >= GROUND) p1.vy = -12; // Nhảy
+    if (inputs.left || keys['KeyA']) p1.vx = -4;
+    if (inputs.right || keys['KeyD']) p1.vx = 4;
 
-    // B. Cập nhật vật lý P1
+    // Vật lý P1
     p1.x += p1.vx;
     p1.y += p1.vy;
-    p1.vy += GRAVITY; // Áp dụng trọng lực
-    if (p1.y + p1.h > GROUND) { p1.y = GROUND - p1.h; p1.vy = 0; } // Chạm đất
+    p1.vy += GRAVITY;
+    if (p1.y + p1.h > GROUND) { p1.y = GROUND - p1.h; p1.vy = 0; }
 
-    // C. Tính toán Hitbox tấn công của P1
+    // Hitbox đòn đánh P1
     const hitBox = { x: p1.x + p1.w, y: p1.y + 10, w: 40, h: 20 };
 
-    // D. Kiểm tra trúng đòn
     if (p1.attacking && isHit(hitBox, p2)) {
-        p1.attacking = false; // Tránh gây sát thương nhiều lần trong 1 cú đấm
+        p1.attacking = false;
         p2.hp -= 10;
-        p2.x += 20; // Đẩy lùi P2 khi trúng đòn
+        p2.x += 15;
     }
 
-    // E. VẼ LẠI MÀN HÌNH
+    // Vẽ lại khung hình
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Vẽ mặt đất
+    // Mặt đất
     ctx.fillStyle = '#666';
     ctx.fillRect(0, GROUND, canvas.width, 40);
 
-    // Vẽ P1 & P2
+    // Nhân vật
     ctx.fillStyle = p1.color; ctx.fillRect(p1.x, p1.y, p1.w, p1.h);
     ctx.fillStyle = p2.color; ctx.fillRect(p2.x, p2.y, p2.w, p2.h);
 
-    // Vẽ đòn đánh P1 (màu vàng)
+    // Hiệu ứng đấm
     if (p1.attacking) {
         ctx.fillStyle = 'yellow';
         ctx.fillRect(hitBox.x, hitBox.y, hitBox.w, hitBox.h);
     }
 
-    // Vẽ thanh máu đơn giản
+    // Thanh máu
     ctx.fillStyle = 'white';
-    ctx.fillText(`P1 HP: ${p1.hp}`, 20, 30);
-    ctx.fillText(`P2 HP: ${p2.hp}`, 500, 30);
+    ctx.font = '14px sans-serif';
+    ctx.fillText(`P1 HP: ${p1.hp}`, 20, 25);
+    ctx.fillText(`P2 HP: ${p2.hp}`, 500, 25);
 
     requestAnimationFrame(loop);
 }
