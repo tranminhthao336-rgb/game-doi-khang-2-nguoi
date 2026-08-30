@@ -3,152 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Stickman Fighting - Skill Update</title>
+    <title>Stickman Fighting - Baldum Ulti</title>
     <style>
-        * {
-            box-sizing: border-box;
-            user-select: none;
-            -webkit-user-select: none;
-            margin: 0;
-            padding: 0;
-        }
+        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; margin: 0; padding: 0; }
+        html, body { width: 100%; height: 100%; background-color: #000; overflow: hidden; font-family: sans-serif; display: flex; justify-content: center; align-items: center; }
+        #game-wrapper { position: relative; width: 100vw; height: 100vh; background: #151515; display: flex; justify-content: center; align-items: center; }
+        canvas { width: 100%; height: 100%; object-fit: contain; background: #222; }
+        
+        .controls-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; justify-content: space-between; align-items: flex-end; padding: 15px 30px; box-sizing: border-box; }
+        .btn-group { display: flex; gap: 10px; pointer-events: auto; }
+        .btn { position: relative; width: 60px; height: 60px; background: rgba(255, 255, 255, 0.15); border: 2px solid rgba(255, 255, 255, 0.5); border-radius: 50%; color: white; font-size: 22px; font-weight: bold; display: flex; align-items: center; justify-content: center; touch-action: manipulation; backdrop-filter: blur(5px); overflow: hidden; }
+        .btn:active { background: rgba(255, 255, 255, 0.4); transform: scale(0.95); }
+        .btn-attack { width: 70px; height: 70px; background: rgba(231, 76, 60, 0.5); border-color: #e74c3c; font-size: 26px; }
+        .btn-jump { background: rgba(46, 204, 113, 0.5); border-color: #2ecc71; }
+        .btn-skill1 { background: rgba(155, 89, 182, 0.5); border-color: #9b59b6; }
+        .btn-baldum { background: rgba(211, 84, 0, 0.6); border-color: #e67e22; font-size: 24px; }
+        .cooldown-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; font-size: 14px; color: #f1c40f; font-weight: bold; opacity: 0; }
 
-        html, body {
-            width: 100%;
-            height: 100%;
-            background-color: #000;
-            overflow: hidden;
-            font-family: sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+        #settings-toggle { position: absolute; top: 15px; right: 15px; z-index: 20; padding: 8px 12px; background: rgba(0,0,0,0.6); color: #fff; border: 1px solid #777; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold; }
+        #debug-panel { display: none; position: absolute; top: 55px; right: 15px; z-index: 20; background: rgba(0,0,0,0.85); border: 1px solid #444; border-radius: 10px; padding: 15px; color: #fff; width: 260px; font-size: 13px; }
+        #debug-panel h3 { margin-bottom: 10px; font-size: 15px; text-align: center; color: #f1c40f; }
+        .debug-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .debug-row input { width: 70px; padding: 4px; border-radius: 4px; border: 1px solid #555; background: #222; color: #fff; text-align: center; }
+        .debug-btn { width: 100%; padding: 8px; background: #e67e22; border: none; border-radius: 6px; color: white; font-weight: bold; margin-top: 5px; cursor: pointer; }
 
-        #game-wrapper {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-            background: #151515;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        canvas {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            background: #222;
-        }
-
-        .controls-layer {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            padding: 20px 40px;
-            box-sizing: border-box;
-        }
-
-        .btn-group {
-            display: flex;
-            gap: 15px;
-            pointer-events: auto;
-        }
-
-        .btn {
-            position: relative;
-            width: 65px;
-            height: 65px;
-            background: rgba(255, 255, 255, 0.15);
-            border: 2px solid rgba(255, 255, 255, 0.5);
-            border-radius: 50%;
-            color: white;
-            font-size: 24px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            touch-action: manipulation;
-            backdrop-filter: blur(5px);
-            overflow: hidden;
-        }
-
-        .btn:active {
-            background: rgba(255, 255, 255, 0.4);
-            transform: scale(0.95);
-        }
-
-        .btn-attack {
-            width: 75px;
-            height: 75px;
-            background: rgba(231, 76, 60, 0.5);
-            border-color: #e74c3c;
-            font-size: 28px;
-        }
-
-        .btn-jump {
-            background: rgba(46, 204, 113, 0.5);
-            border-color: #2ecc71;
-        }
-
-        /* Nút Kỹ Năng Bắn Chưởng */
-        .btn-skill {
-            background: rgba(155, 89, 182, 0.5);
-            border-color: #9b59b6;
-        }
-
-        /* Lớp phủ Cooldown trên nút Skill */
-        .cooldown-overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            color: #f1c40f;
-            font-weight: bold;
-            opacity: 0;
-        }
-
-        #game-over-screen {
-            display: none;
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 10;
-            pointer-events: auto;
-        }
-
-        #game-over-title {
-            font-size: 36px;
-            font-weight: bold;
-            color: #fff;
-            margin-bottom: 20px;
-            text-shadow: 0 0 10px #e74c3c;
-        }
-
-        #restart-btn {
-            padding: 14px 40px;
-            font-size: 22px;
-            font-weight: bold;
-            background: #27ae60;
-            color: white;
-            border: none;
-            border-radius: 30px;
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-        }
-
-        #restart-btn:active {
-            background: #2ecc71;
-        }
+        #game-over-screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); flex-direction: column; align-items: center; justify-content: center; z-index: 30; pointer-events: auto; }
+        #game-over-title { font-size: 36px; font-weight: bold; color: #fff; margin-bottom: 20px; text-shadow: 0 0 10px #e74c3c; }
+        #restart-btn { padding: 12px 35px; font-size: 20px; font-weight: bold; background: #27ae60; color: white; border: none; border-radius: 30px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -156,23 +37,50 @@
 <div id="game-wrapper">
     <canvas id="game" width="800" height="400"></canvas>
     
+    <button id="settings-toggle" onclick="toggleDebugPanel()">⚙️ Cài đặt & Hủy Cooldown</button>
+
+    <div id="debug-panel">
+        <h3>BẢNG ĐIỀU CHỈNH GAME</h3>
+        <div class="debug-row">
+            <label>Máu P1 (Bạn):</label>
+            <input type="number" id="inp-hp-p1" value="100">
+        </div>
+        <div class="debug-row">
+            <label>Sát thương P1:</label>
+            <input type="number" id="inp-dmg-p1" value="10">
+        </div>
+        <hr style="border-color: #444; margin: 8px 0;">
+        <div class="debug-row">
+            <label>Máu P2 (Máy):</label>
+            <input type="number" id="inp-hp-p2" value="100">
+        </div>
+        <div class="debug-row">
+            <label>Sát thương P2:</label>
+            <input type="number" id="inp-dmg-p2" value="10">
+        </div>
+        <button class="debug-btn" onclick="resetAllCooldowns()">⚡ HỦY HỒI CHIÊU NGAY</button>
+        <button class="debug-btn" style="background: #2980b9;" onclick="applyStats()">✅ CẬP NHẬT THÔNG SỐ</button>
+    </div>
+
     <div id="game-over-screen">
         <div id="game-over-title">VICTORY!</div>
         <button id="restart-btn" onclick="resetGame()">Chơi tiếp</button>
     </div>
 
     <div class="controls-layer">
-        <!-- Cụm di chuyển -->
         <div class="btn-group">
             <div class="btn" id="btn-left">◀</div>
             <div class="btn" id="btn-right">▶</div>
         </div>
-        <!-- Cụm kỹ năng & đòn đánh -->
         <div class="btn-group" style="align-items: flex-end;">
             <div class="btn btn-jump" id="btn-jump">▲</div>
-            <div class="btn btn-skill" id="btn-skill">
+            <div class="btn btn-baldum" id="btn-baldum">
+                🌋
+                <div class="cooldown-overlay" id="baldum-cd"></div>
+            </div>
+            <div class="btn btn-skill1" id="btn-skill1">
                 🔥
-                <div class="cooldown-overlay" id="skill-cd"></div>
+                <div class="cooldown-overlay" id="skill1-cd"></div>
             </div>
             <div class="btn btn-attack" id="btn-attack">⚔️</div>
         </div>
@@ -187,18 +95,21 @@ const GRAVITY = 0.6;
 const GROUND = 340;
 let isGameOver = false;
 
-// Danh sách lưu trữ các chưởng năng lượng đang bay
 const projectiles = [];
+const baldumZones = []; // Mảng chứa các vùng Ulti Baldum
+
+const stats = { p1MaxHp: 100, p1Dmg: 10, p2MaxHp: 100, p2Dmg: 10 };
 
 const p1 = { 
     x: 120, y: 150, vx: 0, vy: 0, w: 40, h: 80, hp: 100, 
     color: '#e74c3c', attacking: false, facingRight: 1, animFrame: 0,
-    skillCooldown: false 
+    skill1Cd: false, baldumCd: false, isStunned: false, stunTimer: null
 };
 
 const p2 = { 
     x: 640, y: 150, vx: 0, vy: 0, w: 40, h: 80, hp: 100, 
-    color: '#3498db', attacking: false, attackCooldown: false, facingRight: -1, animFrame: 0 
+    color: '#3498db', attacking: false, attackCooldown: false, facingRight: -1, animFrame: 0,
+    skill1Cd: false, baldumCd: false, isStunned: false, stunTimer: null
 };
 
 const inputs = { left: false, right: false };
@@ -215,73 +126,132 @@ bindBtn('btn-left', () => inputs.left = true, () => inputs.left = false);
 bindBtn('btn-right', () => inputs.right = true, () => inputs.right = false);
 
 bindBtn('btn-jump', () => {
-    if (p1.y + p1.h >= GROUND && !isGameOver) p1.vy = -14;
+    if (p1.y + p1.h >= GROUND && !isGameOver && !p1.isStunned) p1.vy = -14;
 });
 
 bindBtn('btn-attack', () => {
-    if (!p1.attacking && !isGameOver) {
+    if (!p1.attacking && !isGameOver && !p1.isStunned) {
         p1.attacking = true;
         setTimeout(() => p1.attacking = false, 150);
     }
 });
 
-// XỬ LÝ KỸ NĂNG BẮN CHƯỞNG
-function castSkill() {
-    if (p1.skillCooldown || isGameOver) return;
+function castSkill1(char, cdOverlayId) {
+    if (char.skill1Cd || isGameOver || char.isStunned) return;
+    char.skill1Cd = true;
 
-    p1.skillCooldown = true;
-
-    // Tạo chưởng năng lượng
     projectiles.push({
-        x: p1.facingRight === 1 ? p1.x + p1.w : p1.x - 20,
-        y: p1.y + 25,
-        vx: p1.facingRight * 10, // Tốc độ bay
+        x: char.facingRight === 1 ? char.x + char.w : char.x - 20,
+        y: char.y + 25,
+        vx: char.facingRight * 10,
         radius: 12,
-        color: '#f39c12',
-        owner: 'p1'
+        color: char === p1 ? '#f39c12' : '#00d2d3',
+        owner: char
     });
 
-    // Xử lý Cooldown 3 giây trên UI
-    const cdOverlay = document.getElementById('skill-cd');
-    let timeLeft = 3;
-    cdOverlay.style.opacity = '1';
-    cdOverlay.innerText = timeLeft;
-
-    const cdInterval = setInterval(() => {
-        timeLeft--;
-        if (timeLeft > 0) {
-            cdOverlay.innerText = timeLeft;
-        } else {
-            clearInterval(cdInterval);
-            cdOverlay.style.opacity = '0';
-            p1.skillCooldown = false;
-        }
-    }, 1000);
+    startCooldown(char, 'skill1Cd', cdOverlayId, 3);
 }
 
-bindBtn('btn-skill', castSkill);
+// ULT BALDUM: ĐỊA CHẤN ĐỊNH MỆNH
+function castBaldumUlti(char, cdOverlayId) {
+    if (char.baldumCd || isGameOver || char.isStunned) return;
+    char.baldumCd = true;
+
+    const target = char === p1 ? p2 : p1;
+    
+    // Tạo vùng địa chấn ngay tại vị trí đối thủ
+    baldumZones.push({
+        x: target.x + target.w / 2,
+        y: GROUND,
+        radius: 65,
+        delay: 48, // ~0.8 giây đếm ngược nổ
+        activeTimer: 150, // 2.5 giây giam cầm
+        owner: char,
+        triggered: false
+    });
+
+    startCooldown(char, 'baldumCd', cdOverlayId, 6);
+}
+
+function startCooldown(char, cdProp, cdOverlayId, seconds) {
+    if (cdOverlayId) {
+        const cdOverlay = document.getElementById(cdOverlayId);
+        let timeLeft = seconds;
+        cdOverlay.style.opacity = '1';
+        cdOverlay.innerText = timeLeft;
+
+        char[cdProp + 'Timer'] = setInterval(() => {
+            timeLeft--;
+            if (timeLeft > 0) {
+                cdOverlay.innerText = timeLeft;
+            } else {
+                clearInterval(char[cdProp + 'Timer']);
+                cdOverlay.style.opacity = '0';
+                char[cdProp] = false;
+            }
+        }, 1000);
+    } else {
+        setTimeout(() => { char[cdProp] = false; }, seconds * 1000);
+    }
+}
+
+bindBtn('btn-skill1', () => castSkill1(p1, 'skill1-cd'));
+bindBtn('btn-baldum', () => castBaldumUlti(p1, 'baldum-cd'));
 
 const keys = {};
 window.onkeydown = e => {
     keys[e.code] = true;
-    if (e.code === 'KeyW' && p1.y + p1.h >= GROUND && !isGameOver) p1.vy = -14;
-    if (e.code === 'Space' && !p1.attacking && !isGameOver) {
+    if (e.code === 'KeyW' && p1.y + p1.h >= GROUND && !isGameOver && !p1.isStunned) p1.vy = -14;
+    if (e.code === 'Space' && !p1.attacking && !isGameOver && !p1.isStunned) {
         p1.attacking = true;
         setTimeout(() => p1.attacking = false, 150);
     }
-    if (e.code === 'KeyE') castSkill(); // Nhấn E trên bàn phím để bắn chưởng
+    if (e.code === 'KeyE') castSkill1(p1, 'skill1-cd');
+    if (e.code === 'KeyR') castBaldumUlti(p1, 'baldum-cd');
 };
 window.onkeyup = e => keys[e.code] = false;
+
+function toggleDebugPanel() {
+    const p = document.getElementById('debug-panel');
+    p.style.display = p.style.display === 'block' ? 'none' : 'block';
+}
+
+function applyStats() {
+    stats.p1MaxHp = parseInt(document.getElementById('inp-hp-p1').value) || 100;
+    stats.p1Dmg = parseInt(document.getElementById('inp-dmg-p1').value) || 10;
+    stats.p2MaxHp = parseInt(document.getElementById('inp-hp-p2').value) || 100;
+    stats.p2Dmg = parseInt(document.getElementById('inp-dmg-p2').value) || 10;
+
+    p1.hp = Math.min(p1.hp, stats.p1MaxHp);
+    p2.hp = Math.min(p2.hp, stats.p2MaxHp);
+    alert('Đã cập nhật!');
+}
+
+function resetAllCooldowns() {
+    p1.skill1Cd = false; p1.baldumCd = false;
+    p2.skill1Cd = false; p2.baldumCd = false;
+    clearInterval(p1.skill1CdTimer); clearInterval(p1.baldumCdTimer);
+    document.getElementById('skill1-cd').style.opacity = '0';
+    document.getElementById('baldum-cd').style.opacity = '0';
+}
 
 function drawStickman(char) {
     const cx = char.x + char.w / 2;
     const cy = char.y;
     const dir = char.facingRight;
 
-    ctx.strokeStyle = char.color;
-    ctx.fillStyle = char.color;
+    ctx.strokeStyle = char.isStunned ? '#7f8c8d' : char.color;
+    ctx.fillStyle = char.isStunned ? '#7f8c8d' : char.color;
     ctx.lineWidth = 4;
     ctx.lineCap = 'round';
+
+    // Vẽ lồng đất bao phủ nếu bị Ulti Baldum
+    if (char.isStunned) {
+        ctx.fillStyle = 'rgba(120, 66, 18, 0.7)';
+        ctx.beginPath();
+        ctx.fillRect(char.x - 5, char.y - 10, char.w + 10, char.h + 15);
+        ctx.fillStyle = char.color;
+    }
 
     ctx.beginPath();
     ctx.arc(cx, cy + 12, 12, 0, Math.PI * 2);
@@ -309,7 +279,6 @@ function drawStickman(char) {
     if (char.attacking) {
         ctx.lineTo(cx + dir * 45, cy + 32);
         ctx.stroke();
-        
         ctx.fillStyle = '#f1c40f';
         ctx.beginPath();
         ctx.arc(cx + dir * 50, cy + 32, 10, 0, Math.PI * 2);
@@ -324,7 +293,7 @@ function drawStickman(char) {
     ctx.lineTo(cx - dir * 10, cy + 45);
     ctx.stroke();
 
-    char.animFrame++;
+    if (!char.isStunned) char.animFrame++;
 }
 
 function isHit(r1, r2) {
@@ -332,24 +301,30 @@ function isHit(r1, r2) {
            r1.y < r2.y + r2.h && r1.y + r1.h > r2.y;
 }
 
-function updateAI() {
-    const distance = p1.x - p2.x;
-    p2.facingRight = distance > 0 ? 1 : -1;
+function updateSmartAI() {
+    const dx = p1.x - p2.x;
+    const distance = Math.abs(dx);
+    p2.facingRight = dx > 0 ? 1 : -1;
 
-    if (Math.abs(distance) > 50) {
-        p2.vx = p2.facingRight * 3.5;
+    if (p2.isStunned) { p2.vx = 0; return; }
+
+    // AI sử dụng Ulti Baldum
+    if (distance > 100 && distance < 350 && !p2.baldumCd && Math.random() < 0.02) {
+        castBaldumUlti(p2, null);
+    } else if (distance > 150 && !p2.skill1Cd && Math.random() < 0.03) {
+        castSkill1(p2, null);
+    }
+
+    if (distance > 45) {
+        p2.vx = p2.facingRight * 3.8;
     } else {
         p2.vx = 0;
         if (!p2.attacking && !p2.attackCooldown) {
             p2.attacking = true;
             p2.attackCooldown = true;
             setTimeout(() => p2.attacking = false, 150);
-            setTimeout(() => p2.attackCooldown = false, 500);
+            setTimeout(() => p2.attackCooldown = false, 400);
         }
-    }
-
-    if (p1.y < p2.y - 20 && p2.y + p2.h >= GROUND && Math.random() < 0.05) {
-        p2.vy = -14;
     }
 }
 
@@ -362,11 +337,14 @@ function loop() {
     if (isGameOver) return;
 
     p1.vx = 0;
-    if (inputs.left || keys['KeyA']) { p1.vx = -5; p1.facingRight = -1; }
-    if (inputs.right || keys['KeyD']) { p1.vx = 5; p1.facingRight = 1; }
+    if (!p1.isStunned) {
+        if (inputs.left || keys['KeyA']) { p1.vx = -5; p1.facingRight = -1; }
+        if (inputs.right || keys['KeyD']) { p1.vx = 5; p1.facingRight = 1; }
+    }
 
-    updateAI();
+    updateSmartAI();
 
+    // Cập nhật vật lý P1 & P2
     p1.x += p1.vx; p1.y += p1.vy; p1.vy += GRAVITY;
     if (p1.y + p1.h > GROUND) { p1.y = GROUND - p1.h; p1.vy = 0; }
     keepInBounds(p1);
@@ -375,77 +353,101 @@ function loop() {
     if (p2.y + p2.h > GROUND) { p2.y = GROUND - p2.h; p2.vy = 0; }
     keepInBounds(p2);
 
-    // XỬ LÝ CHUYỂN ĐỘNG VÀ VA CHẠM CỦA CHƯỞNG NĂNG LƯỢNG
+    // XỬ LÝ ULT BALDUM (VÙNG ĐỊA CHẤN NỔ)
+    for (let i = baldumZones.length - 1; i >= 0; i--) {
+        const z = baldumZones[i];
+        if (z.delay > 0) {
+            z.delay--;
+        } else if (!z.triggered) {
+            z.triggered = true;
+            // Kiểm tra nhân vật nằm trong vùng nổ
+            [p1, p2].forEach(char => {
+                const charCenterX = char.x + char.w / 2;
+                if (Math.abs(charCenterX - z.x) < z.radius) {
+                    char.isStunned = true;
+                    char.vy = -12; // Hất tung lên không gian
+                    const attackerDmg = z.owner === p1 ? stats.p1Dmg : stats.p2Dmg;
+                    char.hp = Math.max(0, char.hp - attackerDmg * 2.5); // Sát thương Ulti
+
+                    setTimeout(() => { char.isStunned = false; }, 2500); // Đóng băng 2.5s
+                }
+            });
+        } else {
+            z.activeTimer--;
+            if (z.activeTimer <= 0) baldumZones.splice(i, 1);
+        }
+    }
+
+    // Xử lý đạn bay
     for (let i = projectiles.length - 1; i >= 0; i--) {
         const p = projectiles[i];
         p.x += p.vx;
-
-        // Tạo khung va chạm cho đạn
         const projBox = { x: p.x - p.radius, y: p.y - p.radius, w: p.radius * 2, h: p.radius * 2 };
+        const target = p.owner === p1 ? p2 : p1;
+        const attackerDmg = p.owner === p1 ? stats.p1Dmg : stats.p2Dmg;
 
-        // Kiểm tra trúng P2 (Máy)
-        if (p.owner === 'p1' && isHit(projBox, p2)) {
-            p2.hp = Math.max(0, p2.hp - 20); // Chưởng gây 20 HP sát thương
-            p2.x += p.vx > 0 ? 35 : -35; // Đẩy lùi mạnh hơn
+        if (isHit(projBox, target)) {
+            target.hp = Math.max(0, target.hp - attackerDmg * 2);
+            target.x += p.vx > 0 ? 30 : -30;
             projectiles.splice(i, 1);
             continue;
         }
 
-        // Xóa chưởng khi bay ra khỏi màn hình
-        if (p.x < 0 || p.x > canvas.width) {
-            projectiles.splice(i, 1);
-        }
+        if (p.x < 0 || p.x > canvas.width) projectiles.splice(i, 1);
     }
 
-    // Hitbox cận chiến P1
-    const hitBoxP1 = { 
-        x: p1.facingRight === 1 ? p1.x + p1.w : p1.x - 40, 
-        y: p1.y + 10, w: 40, h: 30 
-    };
+    // Đấm cận chiến
+    const hitBoxP1 = { x: p1.facingRight === 1 ? p1.x + p1.w : p1.x - 40, y: p1.y + 10, w: 40, h: 30 };
     if (p1.attacking && isHit(hitBoxP1, p2)) {
         p1.attacking = false;
-        p2.hp = Math.max(0, p2.hp - 10);
+        p2.hp = Math.max(0, p2.hp - stats.p1Dmg);
         p2.x += p1.facingRight * 25;
     }
 
-    // Hitbox cận chiến P2
-    const hitBoxP2 = { 
-        x: p2.facingRight === 1 ? p2.x + p2.w : p2.x - 40, 
-        y: p2.y + 10, w: 40, h: 30 
-    };
+    const hitBoxP2 = { x: p2.facingRight === 1 ? p2.x + p2.w : p2.x - 40, y: p2.y + 10, w: 40, h: 30 };
     if (p2.attacking && isHit(hitBoxP2, p1)) {
         p2.attacking = false;
-        p1.hp = Math.max(0, p1.hp - 10);
+        p1.hp = Math.max(0, p1.hp - stats.p2Dmg);
         p1.x += p2.facingRight * 25;
     }
 
-    // VẼ KHUNG HÌNH
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Mặt đất
-    ctx.strokeStyle = '#555';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(0, GROUND);
-    ctx.lineTo(canvas.width, GROUND);
-    ctx.stroke();
+    // Đất
+    ctx.strokeStyle = '#555'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(0, GROUND); ctx.lineTo(canvas.width, GROUND); ctx.stroke();
 
-    // Vẽ Người que
+    // VẼ CÁC VÙNG ĐỊA CHẤN ULT BALDUM
+    baldumZones.forEach(z => {
+        ctx.save();
+        if (!z.triggered) {
+            // Vùng cảnh báo nổ (Màu đỏ mờ đếm ngược)
+            ctx.fillStyle = 'rgba(231, 76, 60, 0.3)';
+            ctx.strokeStyle = '#e74c3c';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(z.x, z.y, z.radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+        } else {
+            // Vùng địa chấn đang giam cầm (Màu đất đá nổ)
+            ctx.fillStyle = 'rgba(141, 110, 99, 0.5)';
+            ctx.strokeStyle = '#d35400';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(z.x, z.y, z.radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+        }
+        ctx.restore();
+    });
+
     drawStickman(p1);
     drawStickman(p2);
 
-    // VẼ CÁC QUẢ CẦU NĂNG LƯỢNG (PROJECTILES)
     projectiles.forEach(p => {
         ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Hiệu ứng phát sáng hạt chưởng
-        ctx.fillStyle = '#fff';
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius / 2, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.fill();
     });
 
     // UI Thanh máu
@@ -454,14 +456,13 @@ function loop() {
     ctx.fillRect(500, 20, 280, 16);
 
     ctx.fillStyle = '#e74c3c';
-    ctx.fillRect(20, 20, p1.hp * 2.8, 16);
+    ctx.fillRect(20, 20, (p1.hp / stats.p1MaxHp) * 280, 16);
     ctx.fillStyle = '#3498db';
-    ctx.fillRect(500 + (100 - p2.hp) * 2.8, 20, p2.hp * 2.8, 16);
+    ctx.fillRect(500 + (1 - p2.hp / stats.p2MaxHp) * 280, (p2.hp / stats.p2MaxHp) * 280, 16);
 
-    ctx.fillStyle = 'white';
-    ctx.font = 'bold 12px sans-serif';
-    ctx.fillText(`P1 (BẠN)`, 20, 15);
-    ctx.fillText(`P2 (MÁY)`, 740, 15);
+    ctx.fillStyle = 'white'; ctx.font = 'bold 12px sans-serif';
+    ctx.fillText(`P1 (${p1.hp}/${stats.p1MaxHp})`, 20, 15);
+    ctx.fillText(`P2 (${p2.hp}/${stats.p2MaxHp})`, 680, 15);
 
     if (p1.hp <= 0 || p2.hp <= 0) {
         isGameOver = true;
@@ -476,11 +477,12 @@ function loop() {
 }
 
 function resetGame() {
-    p1.hp = 100; p1.x = 120; p1.y = 150; p1.facingRight = 1; p1.skillCooldown = false;
-    p2.hp = 100; p2.x = 640; p2.y = 150; p2.facingRight = -1;
+    p1.hp = stats.p1MaxHp; p1.x = 120; p1.y = 150; p1.facingRight = 1; p1.isStunned = false;
+    p2.hp = stats.p2MaxHp; p2.x = 640; p2.y = 150; p2.facingRight = -1; p2.isStunned = false;
     projectiles.length = 0;
+    baldumZones.length = 0;
     isGameOver = false;
-    document.getElementById('skill-cd').style.opacity = '0';
+    resetAllCooldowns();
     document.getElementById('game-over-screen').style.display = 'none';
     loop();
 }
@@ -489,4 +491,5 @@ loop();
 </script>
 
 </body>
-</html>
+    </html>
+    
