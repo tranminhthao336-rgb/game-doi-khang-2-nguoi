@@ -3,37 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Stickman Fighting - Skills & Debug Menu</title>
+    <title>Stickman Fighting - Smart AI</title>
     <style>
         * { box-sizing: border-box; user-select: none; -webkit-user-select: none; margin: 0; padding: 0; }
         html, body { width: 100%; height: 100%; background-color: #000; overflow: hidden; font-family: sans-serif; display: flex; justify-content: center; align-items: center; }
         #game-wrapper { position: relative; width: 100vw; height: 100vh; background: #151515; display: flex; justify-content: center; align-items: center; }
         canvas { width: 100%; height: 100%; object-fit: contain; background: #222; }
-        
-        /* Layer nút bấm điều khiển */
-        .controls-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; justify-content: space-between; align-items: flex-end; padding: 15px 30px; box-sizing: border-box; }
-        .btn-group { display: flex; gap: 10px; pointer-events: auto; }
-        .btn { position: relative; width: 60px; height: 60px; background: rgba(255, 255, 255, 0.15); border: 2px solid rgba(255, 255, 255, 0.5); border-radius: 50%; color: white; font-size: 22px; font-weight: bold; display: flex; align-items: center; justify-content: center; touch-action: manipulation; backdrop-filter: blur(5px); overflow: hidden; }
+        .controls-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; justify-content: space-between; align-items: flex-end; padding: 20px 40px; box-sizing: border-box; }
+        .btn-group { display: flex; gap: 15px; pointer-events: auto; }
+        .btn { position: relative; width: 65px; height: 65px; background: rgba(255, 255, 255, 0.15); border: 2px solid rgba(255, 255, 255, 0.5); border-radius: 50%; color: white; font-size: 24px; font-weight: bold; display: flex; align-items: center; justify-content: center; touch-action: manipulation; backdrop-filter: blur(5px); overflow: hidden; }
         .btn:active { background: rgba(255, 255, 255, 0.4); transform: scale(0.95); }
-        .btn-attack { width: 70px; height: 70px; background: rgba(231, 76, 60, 0.5); border-color: #e74c3c; font-size: 26px; }
+        .btn-attack { width: 75px; height: 75px; background: rgba(231, 76, 60, 0.5); border-color: #e74c3c; font-size: 28px; }
         .btn-jump { background: rgba(46, 204, 113, 0.5); border-color: #2ecc71; }
-        .btn-skill1 { background: rgba(155, 89, 182, 0.5); border-color: #9b59b6; }
-        .btn-skill2 { background: rgba(46, 204, 113, 0.5); border-color: #27ae60; }
-        .cooldown-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; font-size: 14px; color: #f1c40f; font-weight: bold; opacity: 0; }
-
-        /* Nút & Bảng Cài đặt / Điều chỉnh Parameter */
-        #settings-toggle { position: absolute; top: 15px; right: 15px; z-index: 20; padding: 8px 12px; background: rgba(0,0,0,0.6); color: #fff; border: 1px solid #777; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold; }
-        #debug-panel { display: none; position: absolute; top: 55px; right: 15px; z-index: 20; background: rgba(0,0,0,0.85); border: 1px solid #444; border-radius: 10px; padding: 15px; color: #fff; width: 260px; font-size: 13px; }
-        #debug-panel h3 { margin-bottom: 10px; font-size: 15px; text-align: center; color: #f1c40f; }
-        .debug-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .debug-row input { width: 70px; padding: 4px; border-radius: 4px; border: 1px solid #555; background: #222; color: #fff; text-align: center; }
-        .debug-btn { width: 100%; padding: 8px; background: #e67e22; border: none; border-radius: 6px; color: white; font-weight: bold; margin-top: 5px; cursor: pointer; }
-        .debug-btn:active { background: #d35400; }
-
-        /* Game Over Screen */
-        #game-over-screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); flex-direction: column; align-items: center; justify-content: center; z-index: 30; pointer-events: auto; }
+        .btn-skill { background: rgba(155, 89, 182, 0.5); border-color: #9b59b6; }
+        .cooldown-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; align-items: center; justify-content: center; font-size: 16px; color: #f1c40f; font-weight: bold; opacity: 0; }
+        #game-over-screen { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); flex-direction: column; align-items: center; justify-content: center; z-index: 10; pointer-events: auto; }
         #game-over-title { font-size: 36px; font-weight: bold; color: #fff; margin-bottom: 20px; text-shadow: 0 0 10px #e74c3c; }
-        #restart-btn { padding: 12px 35px; font-size: 20px; font-weight: bold; background: #27ae60; color: white; border: none; border-radius: 30px; cursor: pointer; }
+        #restart-btn { padding: 14px 40px; font-size: 22px; font-weight: bold; background: #27ae60; color: white; border: none; border-radius: 30px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        #restart-btn:active { background: #2ecc71; }
     </style>
 </head>
 <body>
@@ -41,32 +28,6 @@
 <div id="game-wrapper">
     <canvas id="game" width="800" height="400"></canvas>
     
-    <button id="settings-toggle" onclick="toggleDebugPanel()">⚙️ Cài đặt & Hủy hồi chiêu</button>
-
-    <!-- Panel Điều Chỉnh Máu / Sát Thương / Reset Cooldown -->
-    <div id="debug-panel">
-        <h3>BẢNG ĐIỀU CHỈNH GAME</h3>
-        <div class="debug-row">
-            <label>Máu P1 (Bạn):</label>
-            <input type="number" id="inp-hp-p1" value="100">
-        </div>
-        <div class="debug-row">
-            <label>Sát thương P1:</label>
-            <input type="number" id="inp-dmg-p1" value="10">
-        </div>
-        <hr style="border-color: #444; margin: 8px 0;">
-        <div class="debug-row">
-            <label>Máu P2 (Máy):</label>
-            <input type="number" id="inp-hp-p2" value="100">
-        </div>
-        <div class="debug-row">
-            <label>Sát thương P2:</label>
-            <input type="number" id="inp-dmg-p2" value="10">
-        </div>
-        <button class="debug-btn" onclick="resetAllCooldowns()">⚡ HỦY HỒI CHIÊU NGAY</button>
-        <button class="debug-btn" style="background: #2980b9;" onclick="applyStats()">✅ CẬP NHẬT THÔNG SỐ</button>
-    </div>
-
     <div id="game-over-screen">
         <div id="game-over-title">VICTORY!</div>
         <button id="restart-btn" onclick="resetGame()">Chơi tiếp</button>
@@ -79,13 +40,9 @@
         </div>
         <div class="btn-group" style="align-items: flex-end;">
             <div class="btn btn-jump" id="btn-jump">▲</div>
-            <div class="btn btn-skill2" id="btn-skill2">
-                🕸️
-                <div class="cooldown-overlay" id="skill2-cd"></div>
-            </div>
-            <div class="btn btn-skill1" id="btn-skill1">
+            <div class="btn btn-skill" id="btn-skill">
                 🔥
-                <div class="cooldown-overlay" id="skill1-cd"></div>
+                <div class="cooldown-overlay" id="skill-cd"></div>
             </div>
             <div class="btn btn-attack" id="btn-attack">⚔️</div>
         </div>
@@ -102,24 +59,16 @@ let isGameOver = false;
 
 const projectiles = [];
 
-// Cấu hình chỉ số nhân vật
-const stats = {
-    p1MaxHp: 100,
-    p1Dmg: 10,
-    p2MaxHp: 100,
-    p2Dmg: 10
-};
-
 const p1 = { 
     x: 120, y: 150, vx: 0, vy: 0, w: 40, h: 80, hp: 100, 
     color: '#e74c3c', attacking: false, facingRight: 1, animFrame: 0,
-    skill1Cd: false, skill2Cd: false, isRooted: false, rootTimer: null
+    skillCooldown: false 
 };
 
 const p2 = { 
     x: 640, y: 150, vx: 0, vy: 0, w: 40, h: 80, hp: 100, 
     color: '#3498db', attacking: false, attackCooldown: false, facingRight: -1, animFrame: 0,
-    skill1Cd: false, skill2Cd: false, isRooted: false, rootTimer: null
+    skillCooldown: false
 };
 
 const inputs = { left: false, right: false };
@@ -136,7 +85,7 @@ bindBtn('btn-left', () => inputs.left = true, () => inputs.left = false);
 bindBtn('btn-right', () => inputs.right = true, () => inputs.right = false);
 
 bindBtn('btn-jump', () => {
-    if (p1.y + p1.h >= GROUND && !isGameOver && !p1.isRooted) p1.vy = -14;
+    if (p1.y + p1.h >= GROUND && !isGameOver) p1.vy = -14;
 });
 
 bindBtn('btn-attack', () => {
@@ -146,13 +95,12 @@ bindBtn('btn-attack', () => {
     }
 });
 
-// BẮN CHƯỞNG NĂNG LƯỢNG (Skill 1)
-function castSkill1(char, cdOverlayId) {
-    if (char.skill1Cd || isGameOver) return;
-    char.skill1Cd = true;
+function castSkill(char, targetOverlayId) {
+    if (char.skillCooldown || isGameOver) return;
+
+    char.skillCooldown = true;
 
     projectiles.push({
-        type: 'fireball',
         x: char.facingRight === 1 ? char.x + char.w : char.x - 20,
         y: char.y + 25,
         vx: char.facingRight * 10,
@@ -161,97 +109,40 @@ function castSkill1(char, cdOverlayId) {
         owner: char
     });
 
-    startCooldown(char, 'skill1Cd', cdOverlayId, 3);
-}
-
-// BẮN TRÓI CHÂN (Skill 2 - Root)
-function castSkill2(char, cdOverlayId) {
-    if (char.skill2Cd || isGameOver) return;
-    char.skill2Cd = true;
-
-    projectiles.push({
-        type: 'web',
-        x: char.facingRight === 1 ? char.x + char.w : char.x - 20,
-        y: char.y + 25,
-        vx: char.facingRight * 12,
-        radius: 10,
-        color: '#2ecc71',
-        owner: char
-    });
-
-    startCooldown(char, 'skill2Cd', cdOverlayId, 5);
-}
-
-function startCooldown(char, cdProp, cdOverlayId, seconds) {
-    if (cdOverlayId) {
-        const cdOverlay = document.getElementById(cdOverlayId);
-        let timeLeft = seconds;
+    if (targetOverlayId) {
+        const cdOverlay = document.getElementById(targetOverlayId);
+        let timeLeft = 3;
         cdOverlay.style.opacity = '1';
         cdOverlay.innerText = timeLeft;
 
-        char[cdProp + 'Timer'] = setInterval(() => {
+        const cdInterval = setInterval(() => {
             timeLeft--;
             if (timeLeft > 0) {
                 cdOverlay.innerText = timeLeft;
             } else {
-                clearInterval(char[cdProp + 'Timer']);
+                clearInterval(cdInterval);
                 cdOverlay.style.opacity = '0';
-                char[cdProp] = false;
+                char.skillCooldown = false;
             }
         }, 1000);
     } else {
-        setTimeout(() => { char[cdProp] = false; }, seconds * 1000);
+        setTimeout(() => { char.skillCooldown = false; }, 3000);
     }
 }
 
-bindBtn('btn-skill1', () => castSkill1(p1, 'skill1-cd'));
-bindBtn('btn-skill2', () => castSkill2(p1, 'skill2-cd'));
+bindBtn('btn-skill', () => castSkill(p1, 'skill-cd'));
 
 const keys = {};
 window.onkeydown = e => {
     keys[e.code] = true;
-    if (e.code === 'KeyW' && p1.y + p1.h >= GROUND && !isGameOver && !p1.isRooted) p1.vy = -14;
+    if (e.code === 'KeyW' && p1.y + p1.h >= GROUND && !isGameOver) p1.vy = -14;
     if (e.code === 'Space' && !p1.attacking && !isGameOver) {
         p1.attacking = true;
         setTimeout(() => p1.attacking = false, 150);
     }
-    if (e.code === 'KeyE') castSkill1(p1, 'skill1-cd');
-    if (e.code === 'KeyR') castSkill2(p1, 'skill2-cd');
+    if (e.code === 'KeyE') castSkill(p1, 'skill-cd');
 };
 window.onkeyup = e => keys[e.code] = false;
-
-// ĐIỀU CHỈNH DEBUG / CHỈ SỐ
-function toggleDebugPanel() {
-    const p = document.getElementById('debug-panel');
-    p.style.display = p.style.display === 'block' ? 'none' : 'block';
-}
-
-function applyStats() {
-    stats.p1MaxHp = parseInt(document.getElementById('inp-hp-p1').value) || 100;
-    stats.p1Dmg = parseInt(document.getElementById('inp-dmg-p1').value) || 10;
-    stats.p2MaxHp = parseInt(document.getElementById('inp-hp-p2').value) || 100;
-    stats.p2Dmg = parseInt(document.getElementById('inp-dmg-p2').value) || 10;
-
-    p1.hp = Math.min(p1.hp, stats.p1MaxHp);
-    p2.hp = Math.min(p2.hp, stats.p2MaxHp);
-    alert('Đã cập nhật chỉ số thành công!');
-}
-
-function resetAllCooldowns() {
-    p1.skill1Cd = false; p1.skill2Cd = false;
-    p2.skill1Cd = false; p2.skill2Cd = false;
-    clearInterval(p1.skill1CdTimer); clearInterval(p1.skill2CdTimer);
-    document.getElementById('skill1-cd').style.opacity = '0';
-    document.getElementById('skill2-cd').style.opacity = '0';
-}
-
-function applyRoot(target) {
-    target.isRooted = true;
-    if (target.rootTimer) clearTimeout(target.rootTimer);
-    target.rootTimer = setTimeout(() => {
-        target.isRooted = false;
-    }, 2000); // Trói chân trong 2 giây
-}
 
 function drawStickman(char) {
     const cx = char.x + char.w / 2;
@@ -284,17 +175,6 @@ function drawStickman(char) {
     ctx.lineTo(cx + 12 - walkOffset, GROUND);
     ctx.stroke();
 
-    // Hiệu ứng Mạng nhện Trói chân dưới chân
-    if (char.isRooted) {
-        ctx.strokeStyle = '#2ecc71';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(cx, GROUND, 20, 0, Math.PI, true);
-        ctx.stroke();
-        ctx.strokeStyle = char.color;
-        ctx.lineWidth = 4;
-    }
-
     ctx.beginPath();
     ctx.moveTo(cx, cy + 32);
     if (char.attacking) {
@@ -323,49 +203,55 @@ function isHit(r1, r2) {
            r1.y < r2.y + r2.h && r1.y + r1.h > r2.y;
 }
 
+// HÀM AI THÔNG MINH (SMART AI LOGIC)
 function updateSmartAI() {
     const dx = p1.x - p2.x;
     const distance = Math.abs(dx);
     p2.facingRight = dx > 0 ? 1 : -1;
 
-    // AI Không thể di chuyển nếu bị trói chân
-    if (p2.isRooted) {
-        p2.vx = 0;
-        // Dùng skill nếu sẵn sàng
-        if (distance > 100 && !p2.skill1Cd) castSkill1(p2, null);
-        return;
-    }
-
-    // Phản xạ né đạn
+    // 1. Phản xạ Né chưởng của Người chơi
     let dangerProjectile = null;
     for (let p of projectiles) {
-        if (p.owner === p1 && Math.abs(p.x - p2.x) < 180) {
-            dangerProjectile = p;
-            break;
+        if (p.owner === p1) {
+            // Kiểm tra đạn có đang bay về phía AI không
+            if ((p.vx > 0 && p.x < p2.x) || (p.vx < 0 && p.x > p2.x)) {
+                if (Math.abs(p.x - p2.x) < 200) {
+                    dangerProjectile = p;
+                    break;
+                }
+            }
         }
     }
 
-    if (dangerProjectile && p2.y + p2.h >= GROUND && Math.random() < 0.7) {
-        p2.vy = -14;
+    if (dangerProjectile) {
+        // Né đạn: Nhảy lên né nếu đạn sát gần
+        if (p2.y + p2.h >= GROUND && Math.random() < 0.8) {
+            p2.vy = -14;
+        }
     }
 
-    // AI dùng Skill Trói chân hoặc Bắn chưởng
-    if (distance > 150 && distance < 400) {
-        if (!p2.skill2Cd && Math.random() < 0.02) castSkill2(p2, null);
-        else if (!p2.skill1Cd && Math.random() < 0.03) castSkill1(p2, null);
+    // 2. Tấn công tầm xa (Bắn chưởng khi ở xa)
+    if (distance > 180 && distance < 450 && !p2.skillCooldown && Math.random() < 0.03) {
+        castSkill(p2, null);
     }
 
-    // Di chuyển áp sát
+    // 3. Di chuyển và Áp sát thông minh
     if (distance > 45) {
         p2.vx = p2.facingRight * 3.8;
     } else {
         p2.vx = 0;
+        // Đánh cận chiến
         if (!p2.attacking && !p2.attackCooldown) {
             p2.attacking = true;
             p2.attackCooldown = true;
             setTimeout(() => p2.attacking = false, 150);
             setTimeout(() => p2.attackCooldown = false, 400);
         }
+    }
+
+    // 4. Nhảy công kích hoặc phản xạ khi người chơi nhảy
+    if (p1.y < p2.y - 30 && p2.y + p2.h >= GROUND && Math.random() < 0.08) {
+        p2.vy = -14;
     }
 }
 
@@ -378,11 +264,8 @@ function loop() {
     if (isGameOver) return;
 
     p1.vx = 0;
-    // P1 không thể di chuyển nếu bị trói chân
-    if (!p1.isRooted) {
-        if (inputs.left || keys['KeyA']) { p1.vx = -5; p1.facingRight = -1; }
-        if (inputs.right || keys['KeyD']) { p1.vx = 5; p1.facingRight = 1; }
-    }
+    if (inputs.left || keys['KeyA']) { p1.vx = -5; p1.facingRight = -1; }
+    if (inputs.right || keys['KeyD']) { p1.vx = 5; p1.facingRight = 1; }
 
     updateSmartAI();
 
@@ -394,70 +277,93 @@ function loop() {
     if (p2.y + p2.h > GROUND) { p2.y = GROUND - p2.h; p2.vy = 0; }
     keepInBounds(p2);
 
-    // Xử lý đạn/kỹ năng bay
+    // Xử lý đạn bay
     for (let i = projectiles.length - 1; i >= 0; i--) {
         const p = projectiles[i];
         p.x += p.vx;
 
         const projBox = { x: p.x - p.radius, y: p.y - p.radius, w: p.radius * 2, h: p.radius * 2 };
-        const target = p.owner === p1 ? p2 : p1;
-        const attackerDmg = p.owner === p1 ? stats.p1Dmg : stats.p2Dmg;
 
-        if (isHit(projBox, target)) {
-            if (p.type === 'fireball') {
-                target.hp = Math.max(0, target.hp - attackerDmg * 2);
-                target.x += p.vx > 0 ? 30 : -30;
-            } else if (p.type === 'web') {
-                applyRoot(target);
-            }
+        // Đạn P1 trúng P2
+        if (p.owner === p1 && isHit(projBox, p2)) {
+            p2.hp = Math.max(0, p2.hp - 20);
+            p2.x += p.vx > 0 ? 35 : -35;
             projectiles.splice(i, 1);
             continue;
         }
 
-        if (p.x < 0 || p.x > canvas.width) projectiles.splice(i, 1);
+        // Đạn P2 trúng P1
+        if (p.owner === p2 && isHit(projBox, p1)) {
+            p1.hp = Math.max(0, p1.hp - 20);
+            p1.x += p.vx > 0 ? 35 : -35;
+            projectiles.splice(i, 1);
+            continue;
+        }
+
+        if (p.x < 0 || p.x > canvas.width) {
+            projectiles.splice(i, 1);
+        }
     }
 
-    // Đấm cận chiến
-    const hitBoxP1 = { x: p1.facingRight === 1 ? p1.x + p1.w : p1.x - 40, y: p1.y + 10, w: 40, h: 30 };
+    // Hitbox đấm P1
+    const hitBoxP1 = { 
+        x: p1.facingRight === 1 ? p1.x + p1.w : p1.x - 40, 
+        y: p1.y + 10, w: 40, h: 30 
+    };
     if (p1.attacking && isHit(hitBoxP1, p2)) {
         p1.attacking = false;
-        p2.hp = Math.max(0, p2.hp - stats.p1Dmg);
+        p2.hp = Math.max(0, p2.hp - 10);
         p2.x += p1.facingRight * 25;
     }
 
-    const hitBoxP2 = { x: p2.facingRight === 1 ? p2.x + p2.w : p2.x - 40, y: p2.y + 10, w: 40, h: 30 };
+    // Hitbox đấm P2
+    const hitBoxP2 = { 
+        x: p2.facingRight === 1 ? p2.x + p2.w : p2.x - 40, 
+        y: p2.y + 10, w: 40, h: 30 
+    };
     if (p2.attacking && isHit(hitBoxP2, p1)) {
         p2.attacking = false;
-        p1.hp = Math.max(0, p1.hp - stats.p2Dmg);
+        p1.hp = Math.max(0, p1.hp - 10);
         p1.x += p2.facingRight * 25;
     }
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    ctx.strokeStyle = '#555'; ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.moveTo(0, GROUND); ctx.lineTo(canvas.width, GROUND); ctx.stroke();
+    ctx.strokeStyle = '#555';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(0, GROUND);
+    ctx.lineTo(canvas.width, GROUND);
+    ctx.stroke();
 
     drawStickman(p1);
     drawStickman(p2);
 
     projectiles.forEach(p => {
         ctx.fillStyle = p.color;
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius / 2, 0, Math.PI * 2);
+        ctx.fill();
     });
 
-    // UI Thanh máu tỉ lệ theo MaxHP
     ctx.fillStyle = '#333';
     ctx.fillRect(20, 20, 280, 16);
     ctx.fillRect(500, 20, 280, 16);
 
     ctx.fillStyle = '#e74c3c';
-    ctx.fillRect(20, 20, (p1.hp / stats.p1MaxHp) * 280, 16);
+    ctx.fillRect(20, 20, p1.hp * 2.8, 16);
     ctx.fillStyle = '#3498db';
-    ctx.fillRect(500 + (1 - p2.hp / stats.p2MaxHp) * 280, (p2.hp / stats.p2MaxHp) * 280, 16);
+    ctx.fillRect(500 + (100 - p2.hp) * 2.8, 20, p2.hp * 2.8, 16);
 
-    ctx.fillStyle = 'white'; ctx.font = 'bold 12px sans-serif';
-    ctx.fillText(`P1 (${p1.hp}/${stats.p1MaxHp})`, 20, 15);
-    ctx.fillText(`P2 (${p2.hp}/${stats.p2MaxHp})`, 680, 15);
+    ctx.fillStyle = 'white';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillText(`P1 (BẠN)`, 20, 15);
+    ctx.fillText(`P2 (AI THÔNG MINH)`, 650, 15);
 
     if (p1.hp <= 0 || p2.hp <= 0) {
         isGameOver = true;
@@ -472,11 +378,11 @@ function loop() {
 }
 
 function resetGame() {
-    p1.hp = stats.p1MaxHp; p1.x = 120; p1.y = 150; p1.facingRight = 1; p1.isRooted = false;
-    p2.hp = stats.p2MaxHp; p2.x = 640; p2.y = 150; p2.facingRight = -1; p2.isRooted = false;
+    p1.hp = 100; p1.x = 120; p1.y = 150; p1.facingRight = 1; p1.skillCooldown = false;
+    p2.hp = 100; p2.x = 640; p2.y = 150; p2.facingRight = -1; p2.skillCooldown = false;
     projectiles.length = 0;
     isGameOver = false;
-    resetAllCooldowns();
+    document.getElementById('skill-cd').style.opacity = '0';
     document.getElementById('game-over-screen').style.display = 'none';
     loop();
 }
