@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Stickman Fighting - Audio & Characters</title>
+    <title>Stickman Fighting - Lobby System</title>
     <style>
         * { 
             box-sizing: border-box; 
@@ -39,7 +39,7 @@
             background: #222; 
         }
         
-        /* SẢNH CHỜ */
+        /* GIAO DIỆN SẢNH CHỜ (LOBBY UI) */
         #lobby-screen {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -49,73 +49,55 @@
             align-items: center;
             justify-content: center;
             z-index: 20;
-            padding: 20px;
         }
         .lobby-title {
-            font-size: 36px;
+            font-size: 42px;
             font-weight: 900;
             color: #fff;
             text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 20px;
-            text-shadow: 0 0 15px rgba(231, 76, 60, 0.8);
+            letter-spacing: 3px;
+            margin-bottom: 30px;
+            text-shadow: 0 0 15px rgba(231, 76, 60, 0.8), 0 0 30px rgba(52, 152, 219, 0.6);
         }
-        .section-title {
-            color: #ddd;
-            font-size: 16px;
-            margin-bottom: 12px;
-            font-weight: bold;
-        }
-        .char-select {
+        .lobby-cards {
             display: flex;
-            gap: 15px;
-            margin-bottom: 25px;
+            gap: 20px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
         }
-        .char-card {
-            width: 100px;
-            height: 120px;
+        .play-card {
+            width: 220px;
+            height: 140px;
             background: rgba(255, 255, 255, 0.08);
             border: 2px solid rgba(255, 255, 255, 0.2);
-            border-radius: 12px;
+            border-radius: 16px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: all 0.2s;
+            backdrop-filter: blur(10px);
+            transition: all 0.2s ease;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
         }
-        .char-card.active {
-            border-color: #f1c40f;
-            background: rgba(241, 196, 15, 0.2);
-            transform: scale(1.05);
+        .play-card:active {
+            transform: scale(0.95);
+            background: rgba(46, 204, 113, 0.3);
+            border-color: #2ecc71;
         }
-        .char-avatar {
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            margin-bottom: 8px;
-        }
-        .char-name { color: #fff; font-size: 13px; font-weight: bold; }
-        
-        .play-btn {
-            padding: 14px 40px;
-            font-size: 20px;
-            font-weight: bold;
-            background: #27ae60;
-            color: white;
-            border: none;
-            border-radius: 30px;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-        }
-        .play-btn:active { transform: scale(0.95); background: #2ecc71; }
+        .play-card .icon { font-size: 40px; margin-bottom: 10px; }
+        .play-card .text { color: #fff; font-weight: bold; font-size: 18px; }
 
-        /* ĐIỀU KHIỂN GAME */
+        /* NÚT ĐIỀU KHIỂN GAME */
         .controls-layer { 
             position: absolute; 
-            top: 0; left: 0; width: 100%; height: 100%; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
             pointer-events: none; 
-            display: none; 
+            display: none; /* Mặc định ẩn, vào game mới hiện */
             justify-content: space-between; 
             align-items: flex-end; 
             padding: 15px 25px; 
@@ -142,7 +124,7 @@
             font-size: 18px; color: #f1c40f; font-weight: bold; opacity: 0; 
         }
 
-        /* GAME OVER */
+        /* MÀN HÌNH GAME OVER */
         #game-over-screen { 
             display: none; 
             position: absolute; 
@@ -151,7 +133,7 @@
             flex-direction: column; align-items: center; justify-content: center; 
             z-index: 10; pointer-events: auto; 
         }
-        #game-over-title { font-size: 40px; font-weight: bold; color: #fff; margin-bottom: 20px; }
+        #game-over-title { font-size: 40px; font-weight: bold; color: #fff; margin-bottom: 20px; text-shadow: 0 0 10px #e74c3c; }
         .btn-action-group { display: flex; gap: 15px; }
         .game-btn { 
             padding: 12px 30px; font-size: 18px; font-weight: bold; 
@@ -160,32 +142,21 @@
         }
         .btn-restart { background: #27ae60; }
         .btn-lobby { background: #e67e22; }
+        .game-btn:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
 
 <div id="game-wrapper">
-    <!-- SẢNH CHỜ KHÓA CHỌN TƯỚNG -->
+    <!-- SẢNH CHỜ (LOBBY) -->
     <div id="lobby-screen">
         <div class="lobby-title">Stickman Arena</div>
-        <div class="section-title">CHỌN NHÂN VẬT</div>
-        
-        <div class="char-select">
-            <div class="char-card active" onclick="selectChar('red', this)">
-                <div class="char-avatar" style="background: #e74c3c;"></div>
-                <div class="char-name">HỎA ĐỎ</div>
-            </div>
-            <div class="char-card" onclick="selectChar('yellow', this)">
-                <div class="char-avatar" style="background: #f1c40f;"></div>
-                <div class="char-name">LÔI VÀNG</div>
-            </div>
-            <div class="char-card" onclick="selectChar('green', this)">
-                <div class="char-avatar" style="background: #2ecc71;"></div>
-                <div class="char-name">BĂNG XANH</div>
+        <div class="lobby-cards">
+            <div class="play-card" onclick="startGame()">
+                <div class="icon">⚔️</div>
+                <div class="text">ĐẤU VỚI AI</div>
             </div>
         </div>
-
-        <button class="play-btn" onclick="startGame()">BẮT ĐẦU ĐẤU</button>
     </div>
 
     <canvas id="game" width="800" height="400"></canvas>
@@ -199,7 +170,7 @@
         </div>
     </div>
 
-    <!-- PHÍM CẢM ỨNG -->
+    <!-- PHÍM ĐIỀU KHIỂN CẢM ỨNG -->
     <div class="controls-layer" id="controls">
         <div class="btn-group">
             <div class="btn" id="btn-left">◀</div>
@@ -217,97 +188,33 @@
 </div>
 
 <script>
-// HỆ THỐNG ÂM THANH (WEB AUDIO API - Không cần tệp mp3 ngoài)
-const AudioContext = window.AudioContext || window.webkitAudioContext;
-let audioCtx = null;
-
-function initAudio() {
-    if (!audioCtx) audioCtx = new AudioContext();
-}
-
-function playSound(type) {
-    if (!audioCtx) return;
-    const now = audioCtx.currentTime;
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-
-    if (type === 'punch') {
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(200, now);
-        osc.frequency.exponentialRampToValueAtTime(40, now + 0.1);
-        gain.gain.setValueAtTime(0.5, now);
-        gain.gain.linearRampToValueAtTime(0.01, now + 0.1);
-        osc.start(now);
-        osc.stop(now + 0.1);
-    } else if (type === 'hit') {
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(120, now);
-        osc.frequency.exponentialRampToValueAtTime(30, now + 0.15);
-        gain.gain.setValueAtTime(0.4, now);
-        gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
-        osc.start(now);
-        osc.stop(now + 0.15);
-    } else if (type === 'skill') {
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(300, now);
-        osc.frequency.exponentialRampToValueAtTime(800, now + 0.25);
-        gain.gain.setValueAtTime(0.3, now);
-        gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
-        osc.start(now);
-        osc.stop(now + 0.25);
-    } else if (type === 'win') {
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(400, now);
-        osc.frequency.setValueAtTime(600, now + 0.15);
-        gain.gain.setValueAtTime(0.4, now);
-        gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
-        osc.start(now);
-        osc.stop(now + 0.4);
-    }
-}
-
-// KHỞI TẠO GAME
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
+
 const GRAVITY = 0.6;
 const GROUND = 340;
 let isGameOver = false;
 let inGame = false;
-let selectedClass = 'red';
-
-const CHAR_STATS = {
-    red: { color: '#e74c3c', maxHp: 100, speed: 5 },
-    yellow: { color: '#f1c40f', maxHp: 80, speed: 7 },
-    green: { color: '#2ecc71', maxHp: 140, speed: 3.8 }
-};
 
 const projectiles = [];
 
 const p1 = { 
-    x: 120, y: 150, vx: 0, vy: 0, w: 40, h: 80, hp: 100, maxHp: 100, speed: 5,
+    x: 120, y: 150, vx: 0, vy: 0, w: 40, h: 80, hp: 100, 
     color: '#e74c3c', attacking: false, facingRight: 1, animFrame: 0,
     skillCooldown: false 
 };
 
 const p2 = { 
-    x: 640, y: 150, vx: 0, vy: 0, w: 40, h: 80, hp: 100, maxHp: 100, speed: 3.8,
+    x: 640, y: 150, vx: 0, vy: 0, w: 40, h: 80, hp: 100, 
     color: '#3498db', attacking: false, attackCooldown: false, facingRight: -1, animFrame: 0,
     skillCooldown: false
 };
 
 const inputs = { left: false, right: false };
 
-function selectChar(type, el) {
-    selectedClass = type;
-    document.querySelectorAll('.char-card').forEach(c => c.classList.remove('active'));
-    el.classList.add('active');
-}
-
 function bindBtn(id, onPressDown, onPressUp) {
     const el = document.getElementById(id);
-    const start = (e) => { e.preventDefault(); initAudio(); onPressDown(); };
+    const start = (e) => { e.preventDefault(); onPressDown(); };
     const end = (e) => { e.preventDefault(); if (onPressUp) onPressUp(); };
 
     el.addEventListener('touchstart', start, { passive: false });
@@ -326,7 +233,6 @@ bindBtn('btn-jump', () => {
 bindBtn('btn-attack', () => {
     if (!p1.attacking && !isGameOver && inGame) {
         p1.attacking = true;
-        playSound('punch');
         setTimeout(() => p1.attacking = false, 150);
     }
 });
@@ -335,14 +241,13 @@ function castSkill(char, targetOverlayId) {
     if (char.skillCooldown || isGameOver || !inGame) return;
 
     char.skillCooldown = true;
-    playSound('skill');
 
     projectiles.push({
         x: char.facingRight === 1 ? char.x + char.w : char.x - 20,
         y: char.y + 25,
         vx: char.facingRight * 10,
         radius: 12,
-        color: char.color,
+        color: char === p1 ? '#f39c12' : '#00d2d3',
         owner: char
     });
 
@@ -484,13 +389,12 @@ function updateSmartAI() {
     }
 
     if (distance > 45) {
-        p2.vx = p2.facingRight * p2.speed;
+        p2.vx = p2.facingRight * 3.8;
     } else {
         p2.vx = 0;
         if (!p2.attacking && !p2.attackCooldown) {
             p2.attacking = true;
             p2.attackCooldown = true;
-            playSound('punch');
             setTimeout(() => p2.attacking = false, 150);
             setTimeout(() => p2.attackCooldown = false, 400);
         }
@@ -510,8 +414,8 @@ function loop() {
     if (!inGame || isGameOver) return;
 
     p1.vx = 0;
-    if (inputs.left) { p1.vx = -p1.speed; p1.facingRight = -1; }
-    if (inputs.right) { p1.vx = p1.speed; p1.facingRight = 1; }
+    if (inputs.left) { p1.vx = -5; p1.facingRight = -1; }
+    if (inputs.right) { p1.vx = 5; p1.facingRight = 1; }
 
     updateSmartAI();
 
@@ -531,7 +435,6 @@ function loop() {
         if (p.owner === p1 && isHit(projBox, p2)) {
             p2.hp = Math.max(0, p2.hp - 20);
             p2.x += p.vx > 0 ? 35 : -35;
-            playSound('hit');
             projectiles.splice(i, 1);
             continue;
         }
@@ -539,7 +442,6 @@ function loop() {
         if (p.owner === p2 && isHit(projBox, p1)) {
             p1.hp = Math.max(0, p1.hp - 20);
             p1.x += p.vx > 0 ? 35 : -35;
-            playSound('hit');
             projectiles.splice(i, 1);
             continue;
         }
@@ -552,7 +454,6 @@ function loop() {
         p1.attacking = false;
         p2.hp = Math.max(0, p2.hp - 10);
         p2.x += p1.facingRight * 25;
-        playSound('hit');
     }
 
     const hitBoxP2 = { x: p2.facingRight === 1 ? p2.x + p2.w : p2.x - 40, y: p2.y + 10, w: 40, h: 30 };
@@ -560,7 +461,6 @@ function loop() {
         p2.attacking = false;
         p1.hp = Math.max(0, p1.hp - 10);
         p1.x += p2.facingRight * 25;
-        playSound('hit');
     }
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -587,15 +487,14 @@ function loop() {
         ctx.fill();
     });
 
-    // Vẽ HP
     ctx.fillStyle = '#333';
     ctx.fillRect(20, 20, 280, 16);
     ctx.fillRect(500, 20, 280, 16);
 
-    ctx.fillStyle = p1.color;
-    ctx.fillRect(20, 20, (p1.hp / p1.maxHp) * 280, 16);
-    ctx.fillStyle = p2.color;
-    ctx.fillRect(500 + (1 - p2.hp / p2.maxHp) * 280, 20, (p2.hp / p2.maxHp) * 280, 16);
+    ctx.fillStyle = '#e74c3c';
+    ctx.fillRect(20, 20, p1.hp * 2.8, 16);
+    ctx.fillStyle = '#3498db';
+    ctx.fillRect(500 + (100 - p2.hp) * 2.8, 20, p2.hp * 2.8, 16);
 
     ctx.fillStyle = 'white';
     ctx.font = 'bold 12px sans-serif';
@@ -604,7 +503,6 @@ function loop() {
 
     if (p1.hp <= 0 || p2.hp <= 0) {
         isGameOver = true;
-        playSound('win');
         const screen = document.getElementById('game-over-screen');
         const title = document.getElementById('game-over-title');
         title.innerText = p1.hp <= 0 ? 'DEFEAT!' : 'VICTORY!';
@@ -616,6 +514,30 @@ function loop() {
 }
 
 function startGame() {
-    initAudio();
-    const stats = CHAR_STATS[selectedClass];
-    p1.co
+    document.getElementById('lobby-screen').style.display = 'none';
+    document.getElementById('controls').style.display = 'flex';
+    inGame = true;
+    resetGame();
+}
+
+function resetGame() {
+    p1.hp = 100; p1.x = 120; p1.y = 150; p1.facingRight = 1; p1.skillCooldown = false;
+    p2.hp = 100; p2.x = 640; p2.y = 150; p2.facingRight = -1; p2.skillCooldown = false;
+    projectiles.length = 0;
+    isGameOver = false;
+    document.getElementById('skill-cd').style.opacity = '0';
+    document.getElementById('game-over-screen').style.display = 'none';
+    loop();
+}
+
+function returnToLobby() {
+    inGame = false;
+    isGameOver = false;
+    document.getElementById('game-over-screen').style.display = 'none';
+    document.getElementById('controls').style.display = 'none';
+    document.getElementById('lobby-screen').style.display = 'flex';
+}
+</script>
+
+</body>
+</html>
