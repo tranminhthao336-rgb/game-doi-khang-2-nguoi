@@ -516,17 +516,18 @@ function loop() {
         if (p.x < 0 || p.x > canvas.width) projectiles.splice(i, 1);
     }
 
+    /* BẢNG SÁT THƯƠNG ĐÁNH THƯỜNG: ĐÃ ĐỔI TỪ -10 THÀNH -1 SÁT THƯƠNG */
     const hitBoxP1 = { x: p1.facingRight === 1 ? p1.x + p1.w : p1.x - 40, y: p1.y + 10, w: 40, h: 30 };
     if (p1.attacking && isHit(hitBoxP1, p2)) {
         p1.attacking = false;
-        p2.hp = Math.max(0, p2.hp - 10);
+        p2.hp = Math.max(0, p2.hp - 1);
         p2.x += p1.facingRight * 25;
     }
 
     const hitBoxP2 = { x: p2.facingRight === 1 ? p2.x + p2.w : p2.x - 40, y: p2.y + 10, w: 40, h: 30 };
     if (p2.attacking && isHit(hitBoxP2, p1)) {
         p2.attacking = false;
-        p1.hp = Math.max(0, p1.hp - 10);
+        p1.hp = Math.max(0, p1.hp - 1);
         p1.x += p2.facingRight * 25;
     }
 
