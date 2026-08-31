@@ -212,7 +212,8 @@ const p1 = {
 const p2 = { 
     x: 640, y: 150, vx: 0, vy: 0, w: 40, h: 80, hp: 100, 
     color: '#3498db', attacking: false, attackCooldown: false, facingRight: -1, animFrame: 0,
-    skillCooldown: false, isDashing: false, dashCooldown: false, dashHit: false
+    skillCooldown: false, isDashing: false, dashCooldown: false, dashHit: false,
+    rapidPunchCooldown: false, isRapidPunching: false
 };
 
 const inputs = { left: false, right: false };
@@ -313,6 +314,50 @@ function castSkill(char, targetOverlayId) {
 
 bindBtn('btn-skill', () => castSkill(p1, 'skill-cd'));
 
+// SKILL ĐẤM LIÊN TỤC DÀNH CHO AI (MÁY)
+function castAiRapidPunch() {
+    if (p2.rapidPunchCooldown || p2.isRapidPunching || isGameOver || !inGame) return;
+
+    p2.isRapidPunching = true;
+    p2.rapidPunchCooldown = true;
+
+    // Đấm liên tục mỗi 0.2s trong 3s (15 cú đấm)
+    const punchInterval = setInterval(() => {
+        if (isGameOver || !inGame || !p2.isRapidPunching) {
+            clearInterval(punchInterval);
+            return;
+        }
+
+        // Tạo hiệu ứng đấm ngắn
+        p2.attacking = true;
+        setTimeout(() => p2.attacking = false, 100);
+
+        // Kiểm tra xem có trúng P1 không
+        const hitBoxP2 = { 
+            x: p2.facingRight === 1 ? p2.x + p2.w : p2.x - 45, 
+            y: p2.y + 10, 
+            w: 45, 
+            h: 40 
+        };
+
+        if (isHit(hitBoxP2, p1)) {
+            p1.hp = Math.max(0, p1.hp - 1); // 1 sát thương mỗi cú đấm
+            p1.x += p2.facingRight * 6; // Đẩy lùi nhẹ
+        }
+    }, 200);
+
+    // Dừng đấm sau 3 giây
+    setTimeout(() => {
+        clearInterval(punchInterval);
+        p2.isRapidPunching = false;
+    }, 3000);
+
+    // Hồi chiêu 5 giây
+    setTimeout(() => {
+        p2.rapidPunchCooldown = false;
+    }, 5000);
+}
+
 function drawLimb(startX, startY, midX, midY, endX, endY, jointColor) {
     ctx.beginPath();
     ctx.moveTo(startX, startY);
@@ -345,7 +390,13 @@ function drawStickman(char) {
         ctx.stroke();
     }
 
-    ctx.strokeStyle = char.isDashing ? '#f1c40f' : char.color;
+    // Hiệu ứng màu đỏ bộc phát khi AI xài đấm liên tục
+    if (char.isRapidPunching) {
+        ctx.strokeStyle = '#e67e22';
+    } else {
+        ctx.strokeStyle = char.isDashing ? '#f1c40f' : char.color;
+    }
+    
     ctx.lineWidth = 4;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -382,6 +433,15 @@ function drawStickman(char) {
     let elbow2Y = shoulderY + 12;
     let hand2X = shoulderX - dir * 18;
     let hand2Y = shoulderY + 25;
+
+    // Khi đấm liên tục, vẽ cả 2 tay liên hồi
+    if (char.isRapidPunching) {
+        const alt = (char.animFrame % 2 === 0) ? 1 : -1;
+        elbow2X = shoulderX + dir * 20;
+        elbow2Y = shoulderY + alt * 8;
+        hand2X = shoulderX + dir * 42;
+        hand2Y = shoulderY + alt * 8;
+    }
     drawLimb(shoulderX, shoulderY, elbow2X, elbow2Y, hand2X, hand2Y, '#fff');
 
     let elbow1X, elbow1Y, hand1X, hand1Y;
@@ -391,7 +451,7 @@ function drawStickman(char) {
         hand1X = shoulderX + dir * 48;
         hand1Y = shoulderY;
 
-        ctx.fillStyle = '#f1c40f';
+        ctx.fillStyle = char.isRapidPunching ? '#e74c3c' : '#f1c40f';
         ctx.beginPath();
         ctx.arc(hand1X, hand1Y, 8, 0, Math.PI * 2);
         ctx.fill();
@@ -432,6 +492,11 @@ function updateSmartAI() {
         p2.vy = -14;
     }
 
+    // AI sử dụng chiêu đấm liên tục khi ở gần (khoảng cách < 80)
+    if (distance < 80 && !p2.rapidPunchCooldown && Math.random() < 0.08) {
+        castAiRapidPunch();
+    }
+
     if (distance > 180 && distance < 450 && !p2.skillCooldown && Math.random() < 0.03) {
         castSkill(p2, null);
     }
@@ -441,10 +506,10 @@ function updateSmartAI() {
     }
 
     if (distance > 45) {
-        p2.vx = p2.facingRight * 3.8;
+        p2.vx = p2.facingRight * (p2.isRapidPunching ? 2.0 : 3.8); // Giảm tốc độ di chuyển khi đang đấm liên tục
     } else {
         p2.vx = 0;
-        if (!p2.attacking && !p2.attackCooldown) {
+        if (!p2.attacking && !p2.attackCooldown && !p2.isRapidPunching) {
             p2.attacking = true;
             p2.attackCooldown = true;
             setTimeout(() => p2.attacking = false, 150);
@@ -516,7 +581,6 @@ function loop() {
         if (p.x < 0 || p.x > canvas.width) projectiles.splice(i, 1);
     }
 
-    /* BẢNG SÁT THƯƠNG ĐÁNH THƯỜNG: ĐÃ ĐỔI TỪ -10 THÀNH -1 SÁT THƯƠNG */
     const hitBoxP1 = { x: p1.facingRight === 1 ? p1.x + p1.w : p1.x - 40, y: p1.y + 10, w: 40, h: 30 };
     if (p1.attacking && isHit(hitBoxP1, p2)) {
         p1.attacking = false;
@@ -525,7 +589,7 @@ function loop() {
     }
 
     const hitBoxP2 = { x: p2.facingRight === 1 ? p2.x + p2.w : p2.x - 40, y: p2.y + 10, w: 40, h: 30 };
-    if (p2.attacking && isHit(hitBoxP2, p1)) {
+    if (p2.attacking && !p2.isRapidPunching && isHit(hitBoxP2, p1)) {
         p2.attacking = false;
         p1.hp = Math.max(0, p1.hp - 1);
         p1.x += p2.facingRight * 25;
@@ -561,52 +625,4 @@ function loop() {
 
     ctx.fillStyle = '#e74c3c';
     ctx.fillRect(20, 20, p1.hp * 2.8, 16);
-    ctx.fillStyle = '#3498db';
-    ctx.fillRect(500 + (100 - p2.hp) * 2.8, 20, p2.hp * 2.8, 16);
-
-    ctx.fillStyle = 'white';
-    ctx.font = 'bold 12px sans-serif';
-    ctx.fillText(`P1 (BẠN)`, 20, 15);
-    ctx.fillText(`P2 (AI)`, 740, 15);
-
-    if (p1.hp <= 0 || p2.hp <= 0) {
-        isGameOver = true;
-        const screen = document.getElementById('game-over-screen');
-        const title = document.getElementById('game-over-title');
-        title.innerText = p1.hp <= 0 ? 'DEFEAT!' : 'VICTORY!';
-        screen.style.display = 'flex';
-        return;
-    }
-
-    requestAnimationFrame(loop);
-}
-
-function startGame() {
-    document.getElementById('lobby-screen').style.display = 'none';
-    document.getElementById('controls').style.display = 'flex';
-    inGame = true;
-    resetGame();
-}
-
-function resetGame() {
-    p1.hp = 100; p1.x = 120; p1.y = 150; p1.facingRight = 1; p1.skillCooldown = false; p1.isDashing = false; p1.dashCooldown = false;
-    p2.hp = 100; p2.x = 640; p2.y = 150; p2.facingRight = -1; p2.skillCooldown = false; p2.isDashing = false; p2.dashCooldown = false;
-    projectiles.length = 0;
-    isGameOver = false;
-    document.getElementById('skill-cd').style.opacity = '0';
-    document.getElementById('dash-cd').style.opacity = '0';
-    document.getElementById('game-over-screen').style.display = 'none';
-    loop();
-}
-
-function returnToLobby() {
-    inGame = false;
-    isGameOver = false;
-    document.getElementById('game-over-screen').style.display = 'none';
-    document.getElementById('controls').style.display = 'none';
-    document.getElementById('lobby-screen').style.display = 'flex';
-}
-</script>
-
-</body>
-</html>
+    ctx.
