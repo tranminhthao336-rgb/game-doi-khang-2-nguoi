@@ -97,7 +97,7 @@
             width: 100%; 
             height: 100%; 
             pointer-events: none; 
-            display: none; /* Mặc định ẩn, vào game mới hiện */
+            display: none; 
             justify-content: space-between; 
             align-items: flex-end; 
             padding: 15px 25px; 
@@ -115,6 +115,7 @@
         .btn:active { background: rgba(255, 255, 255, 0.5); transform: scale(0.92); }
         .btn-attack { width: 75px; height: 75px; background: rgba(231, 76, 60, 0.6); border-color: #e74c3c; font-size: 30px; }
         .btn-jump { background: rgba(46, 204, 113, 0.6); border-color: #2ecc71; }
+        .btn-dash { background: rgba(241, 196, 15, 0.6); border-color: #f1c40f; }
         .btn-skill { background: rgba(155, 89, 182, 0.6); border-color: #9b59b6; }
         
         .cooldown-overlay { 
@@ -178,6 +179,10 @@
         </div>
         <div class="btn-group" style="align-items: flex-end;">
             <div class="btn btn-jump" id="btn-jump">▲</div>
+            <div class="btn btn-dash" id="btn-dash">
+                ⚡
+                <div class="cooldown-overlay" id="dash-cd"></div>
+            </div>
             <div class="btn btn-skill" id="btn-skill">
                 🔥
                 <div class="cooldown-overlay" id="skill-cd"></div>
@@ -201,13 +206,13 @@ const projectiles = [];
 const p1 = { 
     x: 120, y: 150, vx: 0, vy: 0, w: 40, h: 80, hp: 100, 
     color: '#e74c3c', attacking: false, facingRight: 1, animFrame: 0,
-    skillCooldown: false 
+    skillCooldown: false, isDashing: false, dashCooldown: false, dashHit: false
 };
 
 const p2 = { 
     x: 640, y: 150, vx: 0, vy: 0, w: 40, h: 80, hp: 100, 
     color: '#3498db', attacking: false, attackCooldown: false, facingRight: -1, animFrame: 0,
-    skillCooldown: false
+    skillCooldown: false, isDashing: false, dashCooldown: false, dashHit: false
 };
 
 const inputs = { left: false, right: false };
@@ -236,6 +241,40 @@ bindBtn('btn-attack', () => {
         setTimeout(() => p1.attacking = false, 150);
     }
 });
+
+function castDash(char, targetOverlayId) {
+    if (char.dashCooldown || char.isDashing || isGameOver || !inGame) return;
+
+    char.isDashing = true;
+    char.dashCooldown = true;
+    char.dashHit = false;
+
+    setTimeout(() => {
+        char.isDashing = false;
+    }, 200);
+
+    if (targetOverlayId) {
+        const cdOverlay = document.getElementById(targetOverlayId);
+        let timeLeft = 2;
+        cdOverlay.style.opacity = '1';
+        cdOverlay.innerText = timeLeft;
+
+        const cdInterval = setInterval(() => {
+            timeLeft--;
+            if (timeLeft > 0) {
+                cdOverlay.innerText = timeLeft;
+            } else {
+                clearInterval(cdInterval);
+                cdOverlay.style.opacity = '0';
+                char.dashCooldown = false;
+            }
+        }, 1000);
+    } else {
+        setTimeout(() => { char.dashCooldown = false; }, 2000);
+    }
+}
+
+bindBtn('btn-dash', () => castDash(p1, 'dash-cd'));
 
 function castSkill(char, targetOverlayId) {
     if (char.skillCooldown || isGameOver || !inGame) return;
@@ -297,7 +336,16 @@ function drawStickman(char) {
     const dir = char.facingRight;
     const isJumping = char.y + char.h < GROUND;
 
-    ctx.strokeStyle = char.color;
+    if (char.isDashing) {
+        ctx.strokeStyle = 'rgba(241, 196, 15, 0.4)';
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.moveTo(cx - dir * 25, cy + 40);
+        ctx.lineTo(cx - dir * 5, cy + 40);
+        ctx.stroke();
+    }
+
+    ctx.strokeStyle = char.isDashing ? '#f1c40f' : char.color;
     ctx.lineWidth = 4;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -388,6 +436,10 @@ function updateSmartAI() {
         castSkill(p2, null);
     }
 
+    if (distance > 100 && distance < 250 && !p2.dashCooldown && Math.random() < 0.05) {
+        castDash(p2, null);
+    }
+
     if (distance > 45) {
         p2.vx = p2.facingRight * 3.8;
     } else {
@@ -417,6 +469,9 @@ function loop() {
     if (inputs.left) { p1.vx = -5; p1.facingRight = -1; }
     if (inputs.right) { p1.vx = 5; p1.facingRight = 1; }
 
+    if (p1.isDashing) p1.vx = p1.facingRight * 16;
+    if (p2.isDashing) p2.vx = p2.facingRight * 16;
+
     updateSmartAI();
 
     p1.x += p1.vx; p1.y += p1.vy; p1.vy += GRAVITY;
@@ -426,6 +481,18 @@ function loop() {
     p2.x += p2.vx; p2.y += p2.vy; p2.vy += GRAVITY;
     if (p2.y + p2.h > GROUND) { p2.y = GROUND - p2.h; p2.vy = 0; }
     keepInBounds(p2);
+
+    if (p1.isDashing && !p1.dashHit && isHit(p1, p2)) {
+        p1.dashHit = true;
+        p2.hp = Math.max(0, p2.hp - 5);
+        p2.x += p1.facingRight * 20;
+    }
+
+    if (p2.isDashing && !p2.dashHit && isHit(p2, p1)) {
+        p2.dashHit = true;
+        p1.hp = Math.max(0, p1.hp - 5);
+        p1.x += p2.facingRight * 20;
+    }
 
     for (let i = projectiles.length - 1; i >= 0; i--) {
         const p = projectiles[i];
@@ -521,11 +588,12 @@ function startGame() {
 }
 
 function resetGame() {
-    p1.hp = 100; p1.x = 120; p1.y = 150; p1.facingRight = 1; p1.skillCooldown = false;
-    p2.hp = 100; p2.x = 640; p2.y = 150; p2.facingRight = -1; p2.skillCooldown = false;
+    p1.hp = 100; p1.x = 120; p1.y = 150; p1.facingRight = 1; p1.skillCooldown = false; p1.isDashing = false; p1.dashCooldown = false;
+    p2.hp = 100; p2.x = 640; p2.y = 150; p2.facingRight = -1; p2.skillCooldown = false; p2.isDashing = false; p2.dashCooldown = false;
     projectiles.length = 0;
     isGameOver = false;
     document.getElementById('skill-cd').style.opacity = '0';
+    document.getElementById('dash-cd').style.opacity = '0';
     document.getElementById('game-over-screen').style.display = 'none';
     loop();
 }
