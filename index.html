@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Stickman Fighting - Lobby System</title>
+    <title>Stickman Fighting - Shop System</title>
     <style>
         * { 
             box-sizing: border-box; 
@@ -56,8 +56,22 @@
             color: #fff;
             text-transform: uppercase;
             letter-spacing: 3px;
-            margin-bottom: 30px;
+            margin-bottom: 15px;
             text-shadow: 0 0 15px rgba(231, 76, 60, 0.8), 0 0 30px rgba(52, 152, 219, 0.6);
+        }
+        .coin-display {
+            background: rgba(0, 0, 0, 0.4);
+            border: 2px solid #f1c40f;
+            border-radius: 20px;
+            padding: 8px 20px;
+            color: #f1c40f;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 0 10px rgba(241, 196, 15, 0.3);
         }
         .lobby-cards {
             display: flex;
@@ -67,8 +81,8 @@
             flex-wrap: wrap;
         }
         .play-card {
-            width: 220px;
-            height: 140px;
+            width: 180px;
+            height: 130px;
             background: rgba(255, 255, 255, 0.08);
             border: 2px solid rgba(255, 255, 255, 0.2);
             border-radius: 16px;
@@ -86,8 +100,77 @@
             background: rgba(46, 204, 113, 0.3);
             border-color: #2ecc71;
         }
-        .play-card .icon { font-size: 40px; margin-bottom: 10px; }
-        .play-card .text { color: #fff; font-weight: bold; font-size: 18px; }
+        .play-card .icon { font-size: 38px; margin-bottom: 8px; }
+        .play-card .text { color: #fff; font-weight: bold; font-size: 16px; }
+
+        /* GIAO DIỆN CỬA HÀNG (SHOP UI) */
+        #shop-screen {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.95);
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            z-index: 30;
+            overflow-y: auto;
+        }
+        .shop-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 700px;
+            margin-bottom: 20px;
+        }
+        .shop-title { font-size: 28px; font-weight: bold; color: #fff; }
+        .btn-close-shop {
+            background: #e74c3c; color: white; border: none;
+            padding: 8px 18px; font-weight: bold; border-radius: 20px; cursor: pointer;
+        }
+        .shop-section-title {
+            color: #38bdf8; font-size: 18px; font-weight: bold; margin: 15px 0 10px 0; width: 100%; max-width: 700px; text-align: left;
+        }
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            width: 100%;
+            max-width: 700px;
+        }
+        .shop-item {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .shop-item .item-icon { font-size: 30px; margin-bottom: 8px; }
+        .shop-item .item-name { color: #fff; font-weight: bold; font-size: 15px; }
+        .shop-item .item-desc { color: #94a3b8; font-size: 12px; margin: 4px 0 10px 0; text-align: center; }
+        .shop-item-btn {
+            background: #f1c40f; color: #000; border: none; padding: 6px 16px;
+            font-weight: bold; border-radius: 15px; cursor: pointer; width: 100%;
+        }
+        .shop-item-btn:disabled { background: #475569; color: #94a3b8; cursor: not-allowed; }
+        .shop-item-btn.equipped { background: #2ecc71; color: white; }
+
+        /* HUD XU TRONG TRẬN ĐẤU */
+        .ingame-coin-hud {
+            position: absolute;
+            top: 45px;
+            left: 20px;
+            color: #f1c40f;
+            font-size: 16px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            text-shadow: 1px 1px 2px #000;
+        }
 
         /* NÚT ĐIỀU KHIỂN GAME */
         .controls-layer { 
@@ -134,7 +217,8 @@
             flex-direction: column; align-items: center; justify-content: center; 
             z-index: 10; pointer-events: auto; 
         }
-        #game-over-title { font-size: 40px; font-weight: bold; color: #fff; margin-bottom: 20px; text-shadow: 0 0 10px #e74c3c; }
+        #game-over-title { font-size: 40px; font-weight: bold; color: #fff; margin-bottom: 10px; text-shadow: 0 0 10px #e74c3c; }
+        .reward-msg { font-size: 20px; color: #f1c40f; font-weight: bold; margin-bottom: 25px; }
         .btn-action-group { display: flex; gap: 15px; }
         .game-btn { 
             padding: 12px 30px; font-size: 18px; font-weight: bold; 
@@ -152,11 +236,50 @@
     <!-- SẢNH CHỜ (LOBBY) -->
     <div id="lobby-screen">
         <div class="lobby-title">Stickman Arena</div>
+        <div class="coin-display">
+            <span>🪙</span> <span id="lobby-coins">0</span> Xu
+        </div>
         <div class="lobby-cards">
             <div class="play-card" onclick="startGame()">
                 <div class="icon">⚔️</div>
                 <div class="text">ĐẤU VỚI AI</div>
             </div>
+            <div class="play-card" onclick="openShop()">
+                <div class="icon">🛒</div>
+                <div class="text">CỬA HÀNG</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CỬA HÀNG (SHOP) -->
+    <div id="shop-screen">
+        <div class="shop-header">
+            <div class="shop-title">🛒 CỬA HÀNG</div>
+            <div class="coin-display" style="margin-bottom:0;">
+                <span>🪙</span> <span id="shop-coins">0</span> Xu
+            </div>
+            <button class="btn-close-shop" onclick="closeShop()">Đóng</button>
+        </div>
+
+        <div class="shop-section-title">⚡ Nâng cấp Chỉ số</div>
+        <div class="shop-grid">
+            <div class="shop-item">
+                <div class="item-icon">❤️</div>
+                <div class="item-name">Tăng Máu (+10 HP)</div>
+                <div class="item-desc">Tăng lượng máu tối đa trong trận</div>
+                <button class="shop-item-btn" id="btn-buy-hp" onclick="buyHpUpgrade()">Mua (2 Xu)</button>
+            </div>
+            <div class="shop-item">
+                <div class="item-icon">🗡️</div>
+                <div class="item-name">Tăng Cầu Đấm (+1 Dmg)</div>
+                <div class="item-desc">Tăng sát thương của đòn đấm thường</div>
+                <button class="shop-item-btn" id="btn-buy-dmg" onclick="buyDmgUpgrade()">Mua (3 Xu)</button>
+            </div>
+        </div>
+
+        <div class="shop-section-title">🎨 Trang phục Nhân vật</div>
+        <div class="shop-grid" id="skin-grid">
+            <!-- Rendered by JS -->
         </div>
     </div>
 
@@ -165,14 +288,18 @@
     <!-- MÀN HÌNH KẾT THÚC -->
     <div id="game-over-screen">
         <div id="game-over-title">VICTORY!</div>
+        <div class="reward-msg" id="reward-text">+1 🪙</div>
         <div class="btn-action-group">
             <button class="game-btn btn-restart" onclick="resetGame()">Chơi tiếp</button>
             <button class="game-btn btn-lobby" onclick="returnToLobby()">Về sảnh</button>
         </div>
     </div>
 
-    <!-- PHÍM ĐIỀU KHIỂN CẢM ỨNG -->
+    <!-- PHÍM ĐIỀU KHIỂN CẢM ỨNG & HUD -->
     <div class="controls-layer" id="controls">
+        <div class="ingame-coin-hud">
+            <span>🪙</span> <span id="ingame-coins">0</span>
+        </div>
         <div class="btn-group">
             <div class="btn" id="btn-left">◀</div>
             <div class="btn" id="btn-right">▶</div>
@@ -201,16 +328,135 @@ const GROUND = 340;
 let isGameOver = false;
 let inGame = false;
 
+// DỮ LIỆU GAME (XU & SHOP)
+let userCoins = parseInt(localStorage.getItem('stickman_coins')) || 0;
+let p1BonusHp = parseInt(localStorage.getItem('stickman_bonus_hp')) || 0;
+let p1BonusDmg = parseInt(localStorage.getItem('stickman_bonus_dmg')) || 0;
+
+const skins = [
+    { id: 'red', name: 'Đỏ Cổ Điển', color: '#e74c3c', price: 0 },
+    { id: 'green', name: 'Lục Bảo', color: '#2ecc71', price: 2 },
+    { id: 'yellow', name: 'Hoàng Kim', color: '#f1c40f', price: 4 },
+    { id: 'purple', name: 'Tím Huyền Bí', color: '#9b59b6', price: 5 },
+    { id: 'orange', name: 'Cam Năng Lượng', color: '#e67e22', price: 3 }
+];
+
+let unlockedSkins = JSON.parse(localStorage.getItem('stickman_unlocked_skins')) || ['red'];
+let equippedSkinColor = localStorage.getItem('stickman_equipped_skin') || '#e74c3c';
+
+function updateCoinDisplays() {
+    document.getElementById('lobby-coins').innerText = userCoins;
+    document.getElementById('ingame-coins').innerText = userCoins;
+    document.getElementById('shop-coins').innerText = userCoins;
+    localStorage.setItem('stickman_coins', userCoins);
+}
+
+function updateShopUI() {
+    updateCoinDisplays();
+    
+    // Cập nhật nút mua HP/DMG
+    document.getElementById('btn-buy-hp').innerText = `Mua (+10 HP) - 2 Xu (Đã có: +${p1BonusHp})`;
+    document.getElementById('btn-buy-dmg').innerText = `Mua (+1 Dmg) - 3 Xu (Đã có: +${p1BonusDmg})`;
+
+    // Render danh sách Skins
+    const skinGrid = document.getElementById('skin-grid');
+    skinGrid.innerHTML = '';
+    
+    skins.forEach(skin => {
+        const isUnlocked = unlockedSkins.includes(skin.id);
+        const isEquipped = equippedSkinColor === skin.color;
+        
+        let btnText = 'Mua';
+        let btnClass = 'shop-item-btn';
+        let btnDisabled = false;
+
+        if (isEquipped) {
+            btnText = 'Đang dùng';
+            btnClass += ' equipped';
+            btnDisabled = true;
+        } else if (isUnlocked) {
+            btnText = 'Trang bị';
+        } else {
+            btnText = `Mua (${skin.price} Xu)`;
+        }
+
+        const html = `
+            <div class="shop-item">
+                <div class="item-icon" style="color:${skin.color}">🧍</div>
+                <div class="item-name" style="color:${skin.color}">${skin.name}</div>
+                <div class="item-desc">Trang phục màu sắc độc đáo</div>
+                <button class="${btnClass}" ${btnDisabled ? 'disabled' : ''} onclick="handleSkinClick('${skin.id}')">${btnText}</button>
+            </div>
+        `;
+        skinGrid.innerHTML += html;
+    });
+}
+
+function buyHpUpgrade() {
+    if (userCoins >= 2) {
+        userCoins -= 2;
+        p1BonusHp += 10;
+        localStorage.setItem('stickman_bonus_hp', p1BonusHp);
+        updateShopUI();
+    } else {
+        alert("Bạn không đủ Xu!");
+    }
+}
+
+function buyDmgUpgrade() {
+    if (userCoins >= 3) {
+        userCoins -= 3;
+        p1BonusDmg += 1;
+        localStorage.setItem('stickman_bonus_dmg', p1BonusDmg);
+        updateShopUI();
+    } else {
+        alert("Bạn không đủ Xu!");
+    }
+}
+
+function handleSkinClick(skinId) {
+    const skin = skins.find(s => s.id === skinId);
+    if (!skin) return;
+
+    if (unlockedSkins.includes(skinId)) {
+        equippedSkinColor = skin.color;
+        p1.color = skin.color;
+        localStorage.setItem('stickman_equipped_skin', equippedSkinColor);
+        updateShopUI();
+    } else {
+        if (userCoins >= skin.price) {
+            userCoins -= skin.price;
+            unlockedSkins.push(skinId);
+            equippedSkinColor = skin.color;
+            p1.color = skin.color;
+            localStorage.setItem('stickman_unlocked_skins', JSON.stringify(unlockedSkins));
+            localStorage.setItem('stickman_equipped_skin', equippedSkinColor);
+            updateShopUI();
+        } else {
+            alert("Bạn không đủ Xu!");
+        }
+    }
+}
+
+function openShop() {
+    updateShopUI();
+    document.getElementById('shop-screen').style.display = 'flex';
+}
+
+function closeShop() {
+    document.getElementById('shop-screen').style.display = 'none';
+}
+
 const projectiles = [];
 
 const p1 = { 
-    x: 120, y: 150, vx: 0, vy: 0, w: 40, h: 80, hp: 100, 
-    color: '#e74c3c', attacking: false, facingRight: 1, animFrame: 0,
+    x: 120, y: 150, vx: 0, vy: 0, w: 40, h: 80, hp: 100, maxHp: 100,
+    color: equippedSkinColor, attacking: false, facingRight: 1, animFrame: 0,
     skillCooldown: false, isDashing: false, dashCooldown: false, dashHit: false
 };
 
 const p2 = { 
-    x: 640, y: 150, vx: 0, vy: 0, w: 40, h: 80, hp: 100, 
+    x: 640, y: 150, vx: 0, vy: 0, w: 40, h: 80, hp: 100, maxHp: 100,
     color: '#3498db', attacking: false, attackCooldown: false, facingRight: -1, animFrame: 0,
     skillCooldown: false, isDashing: false, dashCooldown: false, dashHit: false,
     rapidPunchCooldown: false, isRapidPunching: false
@@ -314,315 +560,7 @@ function castSkill(char, targetOverlayId) {
 
 bindBtn('btn-skill', () => castSkill(p1, 'skill-cd'));
 
-// SKILL ĐẤM LIÊN TỤC DÀNH CHO AI (MÁY)
 function castAiRapidPunch() {
     if (p2.rapidPunchCooldown || p2.isRapidPunching || isGameOver || !inGame) return;
 
-    p2.isRapidPunching = true;
-    p2.rapidPunchCooldown = true;
-
-    // Đấm liên tục mỗi 0.2s trong 3s (15 cú đấm)
-    const punchInterval = setInterval(() => {
-        if (isGameOver || !inGame || !p2.isRapidPunching) {
-            clearInterval(punchInterval);
-            return;
-        }
-
-        // Tạo hiệu ứng đấm ngắn
-        p2.attacking = true;
-        setTimeout(() => p2.attacking = false, 100);
-
-        // Kiểm tra xem có trúng P1 không
-        const hitBoxP2 = { 
-            x: p2.facingRight === 1 ? p2.x + p2.w : p2.x - 45, 
-            y: p2.y + 10, 
-            w: 45, 
-            h: 40 
-        };
-
-        if (isHit(hitBoxP2, p1)) {
-            p1.hp = Math.max(0, p1.hp - 1); // 1 sát thương mỗi cú đấm
-            p1.x += p2.facingRight * 6; // Đẩy lùi nhẹ
-        }
-    }, 200);
-
-    // Dừng đấm sau 3 giây
-    setTimeout(() => {
-        clearInterval(punchInterval);
-        p2.isRapidPunching = false;
-    }, 3000);
-
-    // Hồi chiêu 5 giây
-    setTimeout(() => {
-        p2.rapidPunchCooldown = false;
-    }, 5000);
-}
-
-function drawLimb(startX, startY, midX, midY, endX, endY, jointColor) {
-    ctx.beginPath();
-    ctx.moveTo(startX, startY);
-    ctx.lineTo(midX, midY);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(midX, midY);
-    ctx.lineTo(endX, endY);
-    ctx.stroke();
-
-    ctx.fillStyle = jointColor;
-    ctx.beginPath();
-    ctx.arc(midX, midY, 3, 0, Math.PI * 2);
-    ctx.fill();
-}
-
-function drawStickman(char) {
-    const cx = char.x + char.w / 2;
-    const cy = char.y;
-    const dir = char.facingRight;
-    const isJumping = char.y + char.h < GROUND;
-
-    if (char.isDashing) {
-        ctx.strokeStyle = 'rgba(241, 196, 15, 0.4)';
-        ctx.lineWidth = 6;
-        ctx.beginPath();
-        ctx.moveTo(cx - dir * 25, cy + 40);
-        ctx.lineTo(cx - dir * 5, cy + 40);
-        ctx.stroke();
-    }
-
-    // Hiệu ứng màu đỏ bộc phát khi AI xài đấm liên tục
-    if (char.isRapidPunching) {
-        ctx.strokeStyle = '#e67e22';
-    } else {
-        ctx.strokeStyle = char.isDashing ? '#f1c40f' : char.color;
-    }
-    
-    ctx.lineWidth = 4;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-
-    ctx.beginPath();
-    ctx.arc(cx, cy + 12, 12, 0, Math.PI * 2);
-    ctx.stroke();
-
-    const hipX = cx;
-    const hipY = cy + 55;
-    ctx.beginPath();
-    ctx.moveTo(cx, cy + 24);
-    ctx.lineTo(hipX, hipY);
-    ctx.stroke();
-
-    const walk = (char.vx !== 0 && !isJumping) ? Math.sin(char.animFrame * 0.3) : 0;
-    
-    let knee1X = cx + (walk * 12) + (isJumping ? dir * 10 : 0);
-    let knee1Y = cy + 68 + (isJumping ? -10 : 0);
-    let foot1X = cx + (walk * 20) + (isJumping ? dir * 5 : 0);
-    let foot1Y = GROUND;
-    drawLimb(hipX, hipY, knee1X, knee1Y, foot1X, foot1Y, '#fff');
-
-    let knee2X = cx - (walk * 12) - (isJumping ? dir * 5 : 0);
-    let knee2Y = cy + 68 + (isJumping ? -5 : 0);
-    let foot2X = cx - (walk * 20) - (isJumping ? dir * 15 : 0);
-    let foot2Y = GROUND;
-    drawLimb(hipX, hipY, knee2X, knee2Y, foot2X, foot2Y, '#fff');
-
-    const shoulderX = cx;
-    const shoulderY = cy + 32;
-
-    let elbow2X = shoulderX - dir * 12;
-    let elbow2Y = shoulderY + 12;
-    let hand2X = shoulderX - dir * 18;
-    let hand2Y = shoulderY + 25;
-
-    // Khi đấm liên tục, vẽ cả 2 tay liên hồi
-    if (char.isRapidPunching) {
-        const alt = (char.animFrame % 2 === 0) ? 1 : -1;
-        elbow2X = shoulderX + dir * 20;
-        elbow2Y = shoulderY + alt * 8;
-        hand2X = shoulderX + dir * 42;
-        hand2Y = shoulderY + alt * 8;
-    }
-    drawLimb(shoulderX, shoulderY, elbow2X, elbow2Y, hand2X, hand2Y, '#fff');
-
-    let elbow1X, elbow1Y, hand1X, hand1Y;
-    if (char.attacking) {
-        elbow1X = shoulderX + dir * 25;
-        elbow1Y = shoulderY - 2;
-        hand1X = shoulderX + dir * 48;
-        hand1Y = shoulderY;
-
-        ctx.fillStyle = char.isRapidPunching ? '#e74c3c' : '#f1c40f';
-        ctx.beginPath();
-        ctx.arc(hand1X, hand1Y, 8, 0, Math.PI * 2);
-        ctx.fill();
-    } else {
-        elbow1X = shoulderX + dir * 12 + (walk * 8);
-        elbow1Y = shoulderY + 12;
-        hand1X = shoulderX + dir * 18 + (walk * 12);
-        hand1Y = shoulderY + 24;
-    }
-    drawLimb(shoulderX, shoulderY, elbow1X, elbow1Y, hand1X, hand1Y, '#fff');
-
-    char.animFrame++;
-}
-
-function isHit(r1, r2) {
-    return r1.x < r2.x + r2.w && r1.x + r1.w > r2.x &&
-           r1.y < r2.y + r2.h && r1.y + r1.h > r2.y;
-}
-
-function updateSmartAI() {
-    const dx = p1.x - p2.x;
-    const distance = Math.abs(dx);
-    p2.facingRight = dx > 0 ? 1 : -1;
-
-    let dangerProjectile = null;
-    for (let p of projectiles) {
-        if (p.owner === p1) {
-            if ((p.vx > 0 && p.x < p2.x) || (p.vx < 0 && p.x > p2.x)) {
-                if (Math.abs(p.x - p2.x) < 200) {
-                    dangerProjectile = p;
-                    break;
-                }
-            }
-        }
-    }
-
-    if (dangerProjectile && p2.y + p2.h >= GROUND && Math.random() < 0.8) {
-        p2.vy = -14;
-    }
-
-    // AI sử dụng chiêu đấm liên tục khi ở gần (khoảng cách < 80)
-    if (distance < 80 && !p2.rapidPunchCooldown && Math.random() < 0.08) {
-        castAiRapidPunch();
-    }
-
-    if (distance > 180 && distance < 450 && !p2.skillCooldown && Math.random() < 0.03) {
-        castSkill(p2, null);
-    }
-
-    if (distance > 100 && distance < 250 && !p2.dashCooldown && Math.random() < 0.05) {
-        castDash(p2, null);
-    }
-
-    if (distance > 45) {
-        p2.vx = p2.facingRight * (p2.isRapidPunching ? 2.0 : 3.8); // Giảm tốc độ di chuyển khi đang đấm liên tục
-    } else {
-        p2.vx = 0;
-        if (!p2.attacking && !p2.attackCooldown && !p2.isRapidPunching) {
-            p2.attacking = true;
-            p2.attackCooldown = true;
-            setTimeout(() => p2.attacking = false, 150);
-            setTimeout(() => p2.attackCooldown = false, 400);
-        }
-    }
-
-    if (p1.y < p2.y - 30 && p2.y + p2.h >= GROUND && Math.random() < 0.08) {
-        p2.vy = -14;
-    }
-}
-
-function keepInBounds(char) {
-    if (char.x < 10) char.x = 10;
-    if (char.x + char.w > canvas.width - 10) char.x = canvas.width - char.w - 10;
-}
-
-function loop() {
-    if (!inGame || isGameOver) return;
-
-    p1.vx = 0;
-    if (inputs.left) { p1.vx = -5; p1.facingRight = -1; }
-    if (inputs.right) { p1.vx = 5; p1.facingRight = 1; }
-
-    if (p1.isDashing) p1.vx = p1.facingRight * 16;
-    if (p2.isDashing) p2.vx = p2.facingRight * 16;
-
-    updateSmartAI();
-
-    p1.x += p1.vx; p1.y += p1.vy; p1.vy += GRAVITY;
-    if (p1.y + p1.h > GROUND) { p1.y = GROUND - p1.h; p1.vy = 0; }
-    keepInBounds(p1);
-
-    p2.x += p2.vx; p2.y += p2.vy; p2.vy += GRAVITY;
-    if (p2.y + p2.h > GROUND) { p2.y = GROUND - p2.h; p2.vy = 0; }
-    keepInBounds(p2);
-
-    if (p1.isDashing && !p1.dashHit && isHit(p1, p2)) {
-        p1.dashHit = true;
-        p2.hp = Math.max(0, p2.hp - 5);
-        p2.x += p1.facingRight * 20;
-    }
-
-    if (p2.isDashing && !p2.dashHit && isHit(p2, p1)) {
-        p2.dashHit = true;
-        p1.hp = Math.max(0, p1.hp - 5);
-        p1.x += p2.facingRight * 20;
-    }
-
-    for (let i = projectiles.length - 1; i >= 0; i--) {
-        const p = projectiles[i];
-        p.x += p.vx;
-        const projBox = { x: p.x - p.radius, y: p.y - p.radius, w: p.radius * 2, h: p.radius * 2 };
-
-        if (p.owner === p1 && isHit(projBox, p2)) {
-            p2.hp = Math.max(0, p2.hp - 20);
-            p2.x += p.vx > 0 ? 35 : -35;
-            projectiles.splice(i, 1);
-            continue;
-        }
-
-        if (p.owner === p2 && isHit(projBox, p1)) {
-            p1.hp = Math.max(0, p1.hp - 20);
-            p1.x += p.vx > 0 ? 35 : -35;
-            projectiles.splice(i, 1);
-            continue;
-        }
-
-        if (p.x < 0 || p.x > canvas.width) projectiles.splice(i, 1);
-    }
-
-    const hitBoxP1 = { x: p1.facingRight === 1 ? p1.x + p1.w : p1.x - 40, y: p1.y + 10, w: 40, h: 30 };
-    if (p1.attacking && isHit(hitBoxP1, p2)) {
-        p1.attacking = false;
-        p2.hp = Math.max(0, p2.hp - 1);
-        p2.x += p1.facingRight * 25;
-    }
-
-    const hitBoxP2 = { x: p2.facingRight === 1 ? p2.x + p2.w : p2.x - 40, y: p2.y + 10, w: 40, h: 30 };
-    if (p2.attacking && !p2.isRapidPunching && isHit(hitBoxP2, p1)) {
-        p2.attacking = false;
-        p1.hp = Math.max(0, p1.hp - 1);
-        p1.x += p2.facingRight * 25;
-    }
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    ctx.strokeStyle = '#555';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(0, GROUND);
-    ctx.lineTo(canvas.width, GROUND);
-    ctx.stroke();
-
-    drawStickman(p1);
-    drawStickman(p2);
-
-    projectiles.forEach(p => {
-        ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = '#fff';
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius / 2, 0, Math.PI * 2);
-        ctx.fill();
-    });
-
-    ctx.fillStyle = '#333';
-    ctx.fillRect(20, 20, 280, 16);
-    ctx.fillRect(500, 20, 280, 16);
-
-    ctx.fillStyle = '#e74c3c';
-    ctx.fillRect(20, 20, p1.hp * 2.8, 16);
-    ctx.
+    p2.isRapidPunching = tru
